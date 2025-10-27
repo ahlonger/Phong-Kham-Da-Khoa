@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `booking` ADD COLUMN `huy` BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN `xacnhan` BOOLEAN NOT NULL DEFAULT false;

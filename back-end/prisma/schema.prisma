@@ -1,0 +1,82 @@
+generator client {
+   provider = "prisma-client-js"
+   output   = "../src/generated/client"
+ }
+  datasource db {
+   provider = "mysql"
+   url      = env("DATABASE_URL")
+ }
+
+model User {
+  id      Int      @id @default(autoincrement())
+  name    String
+  email   String   @unique
+  password   String?
+  avatar  String?
+  role    String
+  dichvuId  Int?
+  chuyenmon     String?          // nếu không muốn dùng Dichvu.title làm chuyên khoa
+  namkinhnghiem Int?
+  gioithieu     String?
+  thanhtuu      String?
+  phone          String?    // số điện thoại
+  address        String?    // địa chỉ
+  gioitinh       String?    // giới tính
+  dichvu    Dichvu? @relation(fields: [dichvuId], references: [id])
+  bookings  Booking[] @relation("DoctorBookings")
+  workSchedules WorkSchedule[]
+  // 👇 thêm 2 field cho reset mật khẩu
+  resetToken   String?
+  resetExpire  DateTime?
+
+}
+model Booking {
+  id           Int      @id @default(autoincrement())
+  hoten        String
+  email        String
+  sdt          String
+  diachi       String
+  dichvu       String
+  bacsi        String
+  gioitinh     String?
+  ghichu       String?
+  thoigianhen  DateTime
+  dongy        Boolean
+  created_at   DateTime @default(now())
+  doctorId     Int?
+  doctor       User?     @relation("DoctorBookings", fields: [doctorId], references: [id])
+  serviceId    Int?
+  service      Dichvu?   @relation(fields: [serviceId], references: [id])
+  xacnhan      Boolean   @default(false)
+  huy          Boolean   @default(false)
+  trangThai    String?
+}
+
+model Dichvu {
+  id        Int      @id @default(autoincrement())
+  title     String   @unique              // tên dịch vụ
+  desc      String?                       // mô tả dịch vụ
+  price     Int                           // giá (VND) - dùng Int, nếu cần số lẻ thì đổi Decimal
+  image     String?                       // link ảnh hoặc path
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan hệ với User (doctors)
+  doctors   User[]                        // 1 dịch vụ có nhiều bác sĩ
+  bookings  Booking[]  // 1 dịch vụ có nhiều booking
+}
+
+model WorkSchedule {
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  startTime  String    // "08:00"
+  endTime    String    // "11:30"
+  room       String
+  status     String    @default("Đang chờ xác nhận")
+
+  doctorId   Int?
+  doctor     User?     @relation(fields: [doctorId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
