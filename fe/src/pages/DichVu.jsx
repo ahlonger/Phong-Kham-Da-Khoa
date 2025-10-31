@@ -46,46 +46,137 @@ const DichVu = () => {
   }, []);
 
   useEffect(() => {
-    let ignore = false;
+  let ignore = false;
 
-    const load = async () => {
-      if (!doctor?.id && !doctor?.userId) {
-        setErr("Không xác định được bác sĩ đang đăng nhập.");
-        setLoading(false);
+  const load = async () => {
+    setLoading(true);
+    setErr("");
+
+    try {
+      // lấy bác sĩ đang đăng nhập (thử cả sessionStorage và localStorage)
+      const b =
+        JSON.parse(sessionStorage.getItem("bacsi") || "null") ||
+        JSON.parse(sessionStorage.getItem("user") || "null") ||
+        JSON.parse(sessionStorage.getItem("admin") || "null") ||
+        doctor || null;
+
+      if (!b) {
+        if (!ignore) {
+          setErr("Không xác định được bác sĩ đang đăng nhập.");
+          setRows([]);
+          setLoading(false);
+        }
         return;
       }
 
-      setLoading(true);
-      setErr("");
-      try {
-        const doctorId = doctor.id ?? doctor.userId;
-        // Lấy tất cả booking của bác sĩ này
-        const res = await Api.get(`booking?doctorId=${doctorId}`);
-        const list = Array.isArray(res?.data) ? res.data : [];
+      // các “khóa” có thể dùng để nhận diện bác sĩ
+      const doctorId = b.id ?? b.userId ?? b.doctorId ?? null;
+      const name = (b.name || b.fullName || "").toString().trim().toLowerCase();
+      const email = (b.email || "").toString().trim().toLowerCase();
+      const rawSlug = (b.slug || b.username || b.userName || "").toString().trim().toLowerCase();
+      const toSlugVN = (s) =>
+        s
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "-");
+      const nameSlug = name ? toSlugVN(name) : "";
 
-        // Map về bảng hiển thị: mỗi booking = một dòng (dịch vụ bệnh nhân đã đặt)
-        const mapped = list.map((b) => ({
-          id: b.id,
-          serviceName: b.service?.title || b.dichvu || "Không rõ dịch vụ",
-          patientEmail: b.email || "–",
-          date: toVNDate(b.thoigianhen),
-          amount: b.service?.price ?? b.price ?? 0,
-          status: computeStatus(b),
-          patientName: b.hoten || b.benhNhan || b.patient?.name || "Chưa rõ", // dùng cho search
-        }));
+      const doctorKeys = new Set(
+        [email, rawSlug, nameSlug, name, name ? `bs ${name}` : ""]
+          .filter(Boolean)
+          .map((x) => x.toLowerCase())
+      );
 
-        if (!ignore) setRows(mapped);
-      } catch (e) {
-        console.error("Lỗi tải booking của bác sĩ:", e);
-        if (!ignore) setErr("Không tải được dịch vụ bệnh nhân đã đặt.");
-      } finally {
-        if (!ignore) setLoading(false);
+      // gọi tất cả booking rồi lọc
+      const res = await Api.get("booking");
+      const list = Array.isArray(res?.data) ? res.data : [];
+
+      const isMine = (item) => {
+        // so khớp theo id
+        const bId =
+          item.bacsiId ??
+          item.doctorId ??
+          item.bacsi_id ??
+          item.doctor_id ??
+          null;
+        if (doctorId != null && bId != null && Number(doctorId) === Number(bId)) {
+          return true;
+        }
+
+        // so khớp theo chuỗi (email, slug, tên…)
+        const fields = [
+          item.bacsi,
+          item.doctor,
+          item.bacsiSlug,
+          item.doctorSlug,
+          item.bacsiEmail,
+          item.doctorEmail,
+          item.bacsiUsername,
+          item.doctorUsername,
+        ]
+          .map((x) => (x ?? "").toString().trim().toLowerCase())
+          .filter(Boolean);
+
+        return fields.some((f) =>
+          Array.from(doctorKeys).some((k) => f === k || f.includes(k) || k.includes(f))
+        );
+      };
+
+      const formatVND = (n) =>
+        typeof n === "number"
+          ? n.toLocaleString("vi-VN") + " đ"
+          : n
+          ? Number(n).toLocaleString("vi-VN") + " đ"
+          : "0 đ";
+
+      const toVNDate = (iso) => {
+        if (!iso) return "–";
+        const d = new Date(iso);
+        if (isNaN(d)) return "–";
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      };
+
+      const computeStatus = (it) => {
+        if (it.huy === true) return "Đã huỷ";
+        if (it.xacnhan === true) return "Đã xác nhận";
+        return it.trangThai || it.status || "Đang chờ";
+      };
+
+      const mine = list.filter(isMine);
+
+      const mapped = mine.map((b) => ({
+        id: b.id,
+        serviceName: b.service?.title || b.dichvu || "Không rõ dịch vụ",
+        patientEmail: b.email || "–",
+        patientName: b.hoten || b.benhNhan || b.patient?.name || "Chưa rõ",
+        date: toVNDate(b.thoigianhen || b.datetime || b.startTime),
+        amount: b.service?.price ?? b.price ?? 0,
+        status: computeStatus(b),
+      }));
+
+      if (!ignore) {
+        setRows(mapped);
       }
-    };
+    } catch (e) {
+      console.error("Lỗi tải booking:", e);
+      if (!ignore) setErr("Không tải được danh sách dịch vụ của bác sĩ.");
+    } finally {
+      if (!ignore) setLoading(false);
+    }
+  };
 
-    load();
-    return () => { ignore = true; };
-  }, [doctor]);
+  load();
+  return () => {
+    ignore = true;
+  };
+}, [doctor]);
+
 
   // Tìm kiếm theo tên bệnh nhân / tên dịch vụ / email
   const filtered = useMemo(() => {

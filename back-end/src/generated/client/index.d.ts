@@ -1228,6 +1228,7 @@ export namespace Prisma {
     phone: string | null
     address: string | null
     gioitinh: string | null
+    status: string | null
     resetToken: string | null
     resetExpire: Date | null
   }
@@ -1247,6 +1248,7 @@ export namespace Prisma {
     phone: string | null
     address: string | null
     gioitinh: string | null
+    status: string | null
     resetToken: string | null
     resetExpire: Date | null
   }
@@ -1266,6 +1268,7 @@ export namespace Prisma {
     phone: number
     address: number
     gioitinh: number
+    status: number
     resetToken: number
     resetExpire: number
     _all: number
@@ -1299,6 +1302,7 @@ export namespace Prisma {
     phone?: true
     address?: true
     gioitinh?: true
+    status?: true
     resetToken?: true
     resetExpire?: true
   }
@@ -1318,6 +1322,7 @@ export namespace Prisma {
     phone?: true
     address?: true
     gioitinh?: true
+    status?: true
     resetToken?: true
     resetExpire?: true
   }
@@ -1337,6 +1342,7 @@ export namespace Prisma {
     phone?: true
     address?: true
     gioitinh?: true
+    status?: true
     resetToken?: true
     resetExpire?: true
     _all?: true
@@ -1443,6 +1449,7 @@ export namespace Prisma {
     phone: string | null
     address: string | null
     gioitinh: string | null
+    status: string | null
     resetToken: string | null
     resetExpire: Date | null
     _count: UserCountAggregateOutputType | null
@@ -1481,6 +1488,7 @@ export namespace Prisma {
     phone?: boolean
     address?: boolean
     gioitinh?: boolean
+    status?: boolean
     resetToken?: boolean
     resetExpire?: boolean
     dichvu?: boolean | User$dichvuArgs<ExtArgs>
@@ -1506,11 +1514,12 @@ export namespace Prisma {
     phone?: boolean
     address?: boolean
     gioitinh?: boolean
+    status?: boolean
     resetToken?: boolean
     resetExpire?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "avatar" | "role" | "dichvuId" | "chuyenmon" | "namkinhnghiem" | "gioithieu" | "thanhtuu" | "phone" | "address" | "gioitinh" | "resetToken" | "resetExpire", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "password" | "avatar" | "role" | "dichvuId" | "chuyenmon" | "namkinhnghiem" | "gioithieu" | "thanhtuu" | "phone" | "address" | "gioitinh" | "status" | "resetToken" | "resetExpire", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     dichvu?: boolean | User$dichvuArgs<ExtArgs>
     bookings?: boolean | User$bookingsArgs<ExtArgs>
@@ -1540,6 +1549,7 @@ export namespace Prisma {
       phone: string | null
       address: string | null
       gioitinh: string | null
+      status: string | null
       resetToken: string | null
       resetExpire: Date | null
     }, ExtArgs["result"]["user"]>
@@ -1928,6 +1938,7 @@ export namespace Prisma {
     readonly phone: FieldRef<"User", 'String'>
     readonly address: FieldRef<"User", 'String'>
     readonly gioitinh: FieldRef<"User", 'String'>
+    readonly status: FieldRef<"User", 'String'>
     readonly resetToken: FieldRef<"User", 'String'>
     readonly resetExpire: FieldRef<"User", 'DateTime'>
   }
@@ -5605,6 +5616,7 @@ export namespace Prisma {
     phone: 'phone',
     address: 'address',
     gioitinh: 'gioitinh',
+    status: 'status',
     resetToken: 'resetToken',
     resetExpire: 'resetExpire'
   };
@@ -5691,6 +5703,7 @@ export namespace Prisma {
     phone: 'phone',
     address: 'address',
     gioitinh: 'gioitinh',
+    status: 'status',
     resetToken: 'resetToken'
   };
 
@@ -5792,6 +5805,7 @@ export namespace Prisma {
     phone?: StringNullableFilter<"User"> | string | null
     address?: StringNullableFilter<"User"> | string | null
     gioitinh?: StringNullableFilter<"User"> | string | null
+    status?: StringNullableFilter<"User"> | string | null
     resetToken?: StringNullableFilter<"User"> | string | null
     resetExpire?: DateTimeNullableFilter<"User"> | Date | string | null
     dichvu?: XOR<DichvuNullableScalarRelationFilter, DichvuWhereInput> | null
@@ -5814,6 +5828,7 @@ export namespace Prisma {
     phone?: SortOrderInput | SortOrder
     address?: SortOrderInput | SortOrder
     gioitinh?: SortOrderInput | SortOrder
+    status?: SortOrderInput | SortOrder
     resetToken?: SortOrderInput | SortOrder
     resetExpire?: SortOrderInput | SortOrder
     dichvu?: DichvuOrderByWithRelationInput
@@ -5840,6 +5855,7 @@ export namespace Prisma {
     phone?: StringNullableFilter<"User"> | string | null
     address?: StringNullableFilter<"User"> | string | null
     gioitinh?: StringNullableFilter<"User"> | string | null
+    status?: StringNullableFilter<"User"> | string | null
     resetToken?: StringNullableFilter<"User"> | string | null
     resetExpire?: DateTimeNullableFilter<"User"> | Date | string | null
     dichvu?: XOR<DichvuNullableScalarRelationFilter, DichvuWhereInput> | null
@@ -5862,6 +5878,7 @@ export namespace Prisma {
     phone?: SortOrderInput | SortOrder
     address?: SortOrderInput | SortOrder
     gioitinh?: SortOrderInput | SortOrder
+    status?: SortOrderInput | SortOrder
     resetToken?: SortOrderInput | SortOrder
     resetExpire?: SortOrderInput | SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -5889,6 +5906,7 @@ export namespace Prisma {
     phone?: StringNullableWithAggregatesFilter<"User"> | string | null
     address?: StringNullableWithAggregatesFilter<"User"> | string | null
     gioitinh?: StringNullableWithAggregatesFilter<"User"> | string | null
+    status?: StringNullableWithAggregatesFilter<"User"> | string | null
     resetToken?: StringNullableWithAggregatesFilter<"User"> | string | null
     resetExpire?: DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   }
@@ -6176,6 +6194,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     dichvu?: DichvuCreateNestedOneWithoutDoctorsInput
@@ -6198,6 +6217,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     bookings?: BookingUncheckedCreateNestedManyWithoutDoctorInput
@@ -6217,6 +6237,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dichvu?: DichvuUpdateOneWithoutDoctorsNestedInput
@@ -6239,6 +6260,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bookings?: BookingUncheckedUpdateManyWithoutDoctorNestedInput
@@ -6260,6 +6282,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
   }
@@ -6277,6 +6300,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -6296,6 +6320,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
@@ -6704,6 +6729,7 @@ export namespace Prisma {
     phone?: SortOrder
     address?: SortOrder
     gioitinh?: SortOrder
+    status?: SortOrder
     resetToken?: SortOrder
     resetExpire?: SortOrder
   }
@@ -6729,6 +6755,7 @@ export namespace Prisma {
     phone?: SortOrder
     address?: SortOrder
     gioitinh?: SortOrder
+    status?: SortOrder
     resetToken?: SortOrder
     resetExpire?: SortOrder
   }
@@ -6748,6 +6775,7 @@ export namespace Prisma {
     phone?: SortOrder
     address?: SortOrder
     gioitinh?: SortOrder
+    status?: SortOrder
     resetToken?: SortOrder
     resetExpire?: SortOrder
   }
@@ -7761,6 +7789,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     dichvu?: DichvuCreateNestedOneWithoutDoctorsInput
@@ -7782,6 +7811,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     workSchedules?: WorkScheduleUncheckedCreateNestedManyWithoutDoctorInput
@@ -7842,6 +7872,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dichvu?: DichvuUpdateOneWithoutDoctorsNestedInput
@@ -7863,6 +7894,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     workSchedules?: WorkScheduleUncheckedUpdateManyWithoutDoctorNestedInput
@@ -7913,6 +7945,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     bookings?: BookingCreateNestedManyWithoutDoctorInput
@@ -7933,6 +7966,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     bookings?: BookingUncheckedCreateNestedManyWithoutDoctorInput
@@ -8030,6 +8064,7 @@ export namespace Prisma {
     phone?: StringNullableFilter<"User"> | string | null
     address?: StringNullableFilter<"User"> | string | null
     gioitinh?: StringNullableFilter<"User"> | string | null
+    status?: StringNullableFilter<"User"> | string | null
     resetToken?: StringNullableFilter<"User"> | string | null
     resetExpire?: DateTimeNullableFilter<"User"> | Date | string | null
   }
@@ -8063,6 +8098,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     dichvu?: DichvuCreateNestedOneWithoutDoctorsInput
@@ -8084,6 +8120,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
     bookings?: BookingUncheckedCreateNestedManyWithoutDoctorInput
@@ -8118,6 +8155,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     dichvu?: DichvuUpdateOneWithoutDoctorsNestedInput
@@ -8139,6 +8177,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bookings?: BookingUncheckedUpdateManyWithoutDoctorNestedInput
@@ -8276,6 +8315,7 @@ export namespace Prisma {
     phone?: string | null
     address?: string | null
     gioitinh?: string | null
+    status?: string | null
     resetToken?: string | null
     resetExpire?: Date | string | null
   }
@@ -8312,6 +8352,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bookings?: BookingUpdateManyWithoutDoctorNestedInput
@@ -8332,6 +8373,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     bookings?: BookingUncheckedUpdateManyWithoutDoctorNestedInput
@@ -8352,6 +8394,7 @@ export namespace Prisma {
     phone?: NullableStringFieldUpdateOperationsInput | string | null
     address?: NullableStringFieldUpdateOperationsInput | string | null
     gioitinh?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: NullableStringFieldUpdateOperationsInput | string | null
     resetToken?: NullableStringFieldUpdateOperationsInput | string | null
     resetExpire?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }

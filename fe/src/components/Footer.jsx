@@ -1,6 +1,6 @@
 // src/components/Footer.jsx
 import React from "react";
-
+import { Link } from "react-router-dom"; 
 const Footer = () => {
   return (
     <footer className="bg-[#0077cc] text-white pt-10 mt-10">
@@ -14,10 +14,10 @@ const Footer = () => {
         <div>
           <h4 className="text-lg font-semibold mb-2">Liên kết</h4>
           <ul className="space-y-2">
-            <li><a href="#" className="hover:underline">Trang chủ</a></li>
-            <li><a href="#" className="hover:underline">Dịch vụ</a></li>
-            <li><a href="#" className="hover:underline">Gói</a></li>
-            <li><a href="#" className="hover:underline">Bác sĩ</a></li>
+            <li><Link to="/" className="hover:underline">Trang chủ</Link></li>
+            <li><Link to="/" className="hover:underline">Dịch vụ</Link></li>
+            <li><Link to="/goi" className="hover:underline">Gói</Link></li>
+            <li><Link to="/danh-sach-bac-si" className="hover:underline">Bác sĩ</Link></li>
           </ul>
         </div>
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
 import phongkhamImage from "../assets/phongkham.jpg";
-
+import Api from "../components/Api";
 const Navbar = () => {
   const [user, setUser] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -11,21 +11,34 @@ const Navbar = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  // Lấy thông tin user từ localStorage
+  // Lấy thông tin user từ sessionStorage
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (storedUser) {
       setUser(storedUser);
     }
   }, []);
 
   // Đăng xuất
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+  // Đăng xuất
+const handleLogout = async () => {
+  try {
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
+    if (storedUser && storedUser.id) {
+      // ✅ gọi đúng API logout của backend
+      await Api.post("logout", { id: storedUser.id });
+      console.log("✅ Đã gửi yêu cầu logout cho user", storedUser.id);
+    }
+
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
     setUser(null);
     navigate("/dang-nhap");
-  };
+  } catch (err) {
+    console.error("❌ Lỗi khi logout:", err);
+  }
+};
+
 
   const toggleMenu = () => setIsOpen(!isOpen);
 

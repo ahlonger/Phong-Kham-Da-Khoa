@@ -106,76 +106,98 @@ const filteredDoctors = React.useMemo(() => {
 
   // Nạp email & dropdown
   useEffect(() => {
+  const token = sessionStorage.getItem("token");
+  const storedUser = JSON.parse(sessionStorage.getItem("user") || "null");
+
+  if (!storedUser?.id) {
+    console.warn("Không tìm thấy user trong sessionStorage");
+    return;
+  }
+
+  const authCfg = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+  // ✅ Gọi API lấy thông tin user theo ID
+  (async () => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
-      if (storedUser?.email) {
-        setForm((prev) => ({ ...prev, email: storedUser.email }));
-      }
-    } catch {}
+      const res = await Api.get(`user/${storedUser.id}`, authCfg);
+      const u = res.data;
 
-    const token = (() => {
-      try {
-        const t = JSON.parse(localStorage.getItem("token") || "null");
-        return t || localStorage.getItem("token") || undefined;
-      } catch {
-        return localStorage.getItem("token") || undefined;
-      }
-    })();
+      // Lưu thông tin vào form
+      setForm((prev) => ({
+        ...prev,
+        name: u.name || "",
+        email: u.email || "",
+        phone: u.phone || "",
+        address: u.address || "",
+        gioitinh: u.gioitinh || "",
+      }));
 
-    const authCfg = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-
-    // Services
-    (async () => {
-      setLoadingSvc(true);
-      setErrSvc("");
-      try {
-        const res = await Api.get("service", authCfg);
-        const list = parseServices(res);
-        const normalized = list
-          .map((s) => ({
-            id: s.id ?? s.serviceId ?? s._id,
-            title: s.title ?? s.name ?? s.ten ?? "Không tên",
-            price: s.price ?? s.gia,
-          }))
-          .filter((s) => s.id != null);
-        setServices(normalized);
-      } catch (e) {
-        console.error("Lỗi tải dịch vụ:", e);
-        setErrSvc("Không tải được danh sách dịch vụ.");
-      } finally {
-        setLoadingSvc(false);
+      // ✅ Nếu user chưa đủ thông tin → báo và chuyển hướng sang trang cập nhật
+      if (!u.phone || !u.address || !u.gioitinh) {
+        alert("⚠️ Vui lòng cập nhật đầy đủ số điện thoại, địa chỉ và giới tính trước khi đặt lịch.");
+        navigate("/quan-ly-thong-tin-ca-nhan", { state: { from: "/dat-lich" } });
+        return;
       }
-    })();
 
-    // Doctors
-    (async () => {
-      setLoadingDoc(true);
-      setErrDoc("");
-      try {
-        const res = await Api.get("user", authCfg);
-        const list = parseDoctors(res);
-        const onlyDocs = list.filter((d) => {
-          const role = (d.role || "").toString().toLowerCase();
-          const roleId = d.role_id ?? d.roleId;
-          return role === "bacsi" || roleId === 2 || String(roleId) === "2";
-        });
-        const normalized = (onlyDocs.length ? onlyDocs : list)
-          .map((d) => ({
-            id: d.id ?? d.userId ?? d._id,
-            name: d.name ?? d.fullName ?? d.hoten ?? "Không tên",
-            email: d.email,
-            dichvuId: d.dichvuId ?? d.dichvu?.id ?? null,
-          }))
-          .filter((d) => d.id != null);
-        setDoctors(normalized);
-      } catch (e) {
-        console.error("Lỗi tải bác sĩ:", e);
-        setErrDoc("Không tải được danh sách bác sĩ.");
-      } finally {
-        setLoadingDoc(false);
-      }
-    })();
-  }, []);
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy thông tin user:", err);
+    }
+  })();
+
+  // ====== Gọi API lấy danh sách dịch vụ ======
+  (async () => {
+    setLoadingSvc(true);
+    setErrSvc("");
+    try {
+      const res = await Api.get("service", authCfg);
+      const list = parseServices(res);
+      const normalized = list
+        .map((s) => ({
+          id: s.id ?? s.serviceId ?? s._id,
+          title: s.title ?? s.name ?? s.ten ?? "Không tên",
+          price: s.price ?? s.gia,
+        }))
+        .filter((s) => s.id != null);
+      setServices(normalized);
+    } catch (e) {
+      console.error("Lỗi tải dịch vụ:", e);
+      setErrSvc("Không tải được danh sách dịch vụ.");
+    } finally {
+      setLoadingSvc(false);
+    }
+  })();
+
+  // ====== Gọi API lấy danh sách bác sĩ ======
+  (async () => {
+    setLoadingDoc(true);
+    setErrDoc("");
+    try {
+      const res = await Api.get("user", authCfg);
+      const list = parseDoctors(res);
+      const onlyDocs = list.filter((d) => {
+        const role = (d.role || "").toString().toLowerCase();
+        const roleId = d.role_id ?? d.roleId;
+        return role === "bacsi" || roleId === 2 || String(roleId) === "2";
+      });
+      const normalized = (onlyDocs.length ? onlyDocs : list)
+        .map((d) => ({
+          id: d.id ?? d.userId ?? d._id,
+          name: d.name ?? d.fullName ?? d.hoten ?? "Không tên",
+          email: d.email,
+          dichvuId: d.dichvuId ?? d.dichvu?.id ?? null,
+        }))
+        .filter((d) => d.id != null);
+      setDoctors(normalized);
+    } catch (e) {
+      console.error("Lỗi tải bác sĩ:", e);
+      setErrDoc("Không tải được danh sách bác sĩ.");
+    } finally {
+      setLoadingDoc(false);
+    }
+  })();
+}, []);
+
+
 
   /* ============== FIX: handleSubmit dùng selectedDate SAU khi đã khai báo ============== */
   const handleSubmit = async () => {
@@ -241,7 +263,7 @@ const filteredDoctors = React.useMemo(() => {
         dongy: agreed,
       };
 
-      localStorage.setItem("pendingBooking", JSON.stringify(pendingBooking));
+      sessionStorage.setItem("pendingBooking", JSON.stringify(pendingBooking));
       setDepositAmount(deposit);
       setNewBooking(pendingBooking);
       setDepositOpen(true); // mở modal nhắc đặt cọc
@@ -273,6 +295,8 @@ const filteredDoctors = React.useMemo(() => {
 
         <div className="flex w-[950px] h-[90vh] bg-white shadow-xl rounded-2xl overflow-hidden transform transition-all hover:scale-[1.01] relative z-10">
           <div className="w-1/2 p-6 box-border">
+          {/* ⚠️ Banner cảnh báo nếu thiếu thông tin */}
+
             <h3 className="text-2xl font-bold text-gray-800 mb-2 animate-fade-in">ĐẶT LỊCH HẸN</h3>
             <p className="font-semibold text-gray-700 mb-3">THÔNG TIN BỆNH NHÂN</p>
 
@@ -281,7 +305,7 @@ const filteredDoctors = React.useMemo(() => {
               type="text"
               placeholder="Nhập họ tên"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              readOnly
               className="w-full p-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
             />
 
@@ -297,13 +321,7 @@ const filteredDoctors = React.useMemo(() => {
                 type="tel"
                 placeholder="Số điện thoại"
                 value={form.phone}
-                onChange={(e) => {
-                  const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
-                  setForm({ ...form, phone: onlyDigits });
-                }}
-                inputMode="numeric"
-                pattern="\d{10}"
-                maxLength={10}
+                readOnly
                 className="w-1/2 p-2 mb-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
               />
             </div>
@@ -316,7 +334,7 @@ const filteredDoctors = React.useMemo(() => {
                   type="text"
                   placeholder="Nhập địa chỉ"
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  readOnly
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 />
               </div>
@@ -327,35 +345,35 @@ const filteredDoctors = React.useMemo(() => {
                 <div className="flex items-center gap-4 mt-2 text-sm">
                   <label className="flex items-center gap-2">
                     <input
-                      type="radio"
-                      name="gioitinh"
-                      value="Nam"
-                      checked={form.gioitinh === "Nam"}
-                      onChange={(e) => setForm({ ...form, gioitinh: e.target.value })}
-                      className="text-green-600"
-                    />
+  type="radio"
+  name="gioitinh"
+  value="Nam"
+  checked={form.gioitinh === "Nam"}
+  readOnly
+  className="pointer-events-none"
+/>
                     Nam
                   </label>
                   <label className="flex items-center gap-2">
                     <input
-                      type="radio"
-                      name="gioitinh"
-                      value="Nữ"
-                      checked={form.gioitinh === "Nữ"}
-                      onChange={(e) => setForm({ ...form, gioitinh: e.target.value })}
-                      className="text-green-600"
-                    />
+  type="radio"
+  name="gioitinh"
+  value="Nữ"
+  checked={form.gioitinh === "Nữ"}
+  readOnly
+  className="pointer-events-none"
+/>
                     Nữ
                   </label>
                   <label className="flex items-center gap-2">
                     <input
-                      type="radio"
-                      name="gioitinh"
-                      value="Khác"
-                      checked={form.gioitinh === "Khác"}
-                      onChange={(e) => setForm({ ...form, gioitinh: e.target.value })}
-                      className="text-green-600"
-                    />
+  type="radio"
+  name="gioitinh"
+  value="Khác"
+  checked={form.gioitinh === "Khác"}
+  readOnly
+  className="pointer-events-none"
+/>
                     Khác
                   </label>
                 </div>

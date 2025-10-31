@@ -135,6 +135,7 @@ exports.Prisma.UserScalarFieldEnum = {
   phone: 'phone',
   address: 'address',
   gioitinh: 'gioitinh',
+  status: 'status',
   resetToken: 'resetToken',
   resetExpire: 'resetExpire'
 };
@@ -203,6 +204,7 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   phone: 'phone',
   address: 'address',
   gioitinh: 'gioitinh',
+  status: 'status',
   resetToken: 'resetToken'
 };
 

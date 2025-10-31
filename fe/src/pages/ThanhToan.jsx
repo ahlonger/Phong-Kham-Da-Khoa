@@ -15,16 +15,16 @@ const PaymentForm = () => {
   // Lấy token giống DatLich (để gọi BE có Authorization)
   const token = (() => {
     try {
-      const t = JSON.parse(localStorage.getItem("token") || "null");
-      return t || localStorage.getItem("token") || undefined;
+      const t = JSON.parse(sessionStorage.getItem("token") || "null");
+      return t || sessionStorage.getItem("token") || undefined;
     } catch {
-      return localStorage.getItem("token") || undefined;
+      return sessionStorage.getItem("token") || undefined;
     }
   })();
   const authCfg = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
   useEffect(() => {
-    const pendingBooking = localStorage.getItem("pendingBooking");
+    const pendingBooking = sessionStorage.getItem("pendingBooking");
     if (!pendingBooking) {
       alert("Không có dữ liệu thanh toán. Vui lòng thực hiện lại.");
       navigate("/dat-lich");
@@ -78,7 +78,7 @@ const PaymentForm = () => {
     try {
       // NHÁNH GÓI DỊCH VỤ: không gọi BE (giữ nguyên hành vi cũ)
       if (isPackage) {
-        localStorage.removeItem("pendingBooking");
+        sessionStorage.removeItem("pendingBooking");
         alert("✅ Thanh toán thành công cho gói dịch vụ!");
         navigate("/", {
           state: {
@@ -146,8 +146,8 @@ const PaymentForm = () => {
         bookingObj?.bookingId;
 
       if (okStatus && (createdId || bookingObj)) {
-        localStorage.removeItem("pendingBooking");
-        alert("✅ Đặt lịch thành công!");
+        sessionStorage.removeItem("pendingBooking");
+        alert(" Đặt lịch thành công!");
         navigate("/", {
           state: {
             message: "Đặt lịch thành công!",
@@ -162,8 +162,8 @@ const PaymentForm = () => {
         );
       }
     } catch (error) {
-      console.error("❌ Lỗi khi xử lý thanh toán:", error);
-      alert(error?.response?.data?.message || "❌ Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
+      console.error(" Lỗi khi xử lý thanh toán:", error);
+      alert(error?.response?.data?.message || " Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
     } finally {
       setProcessing(false);
     }

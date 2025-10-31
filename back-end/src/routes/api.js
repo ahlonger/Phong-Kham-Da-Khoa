@@ -15,8 +15,16 @@ router.post('/login', userController.loginUser);
 
 router.get('/user', userController.listUsers);
 
+// Lấy chi tiết 1 user theo id
+router.get('/user/:id', userController.getUserById);
+
 // cập nhật user (mới)
 router.put('/user/:id', userController.upload, userController.updateUser);
+
+router.post('/logout', userController.logoutUser);
+
+// DELETE /api/user/:id - Xóa user thật trong DB
+router.delete('/user/:id', userController.deleteUser);
 
 // Quên mật khẩu
 router.post('/forgot-password', userController.forgotPassword);
@@ -30,23 +38,25 @@ router.post('/booking', bookingController.createBooking);
 router.get('/booking', bookingController.getAllBookings);
 
 router.put('/booking/:id', bookingController.updateBooking);
+
+router.patch('/booking/:id', bookingController.cancelBooking);
+
 // CRUD
-router.get('/services-with-doctors', serviceController.getDichvusWithDoctors);
+
 
 // GET /api/services/with-doctors - Lấy dịch vụ kèm bác sĩ
-router.get('/services-doctors', serviceController.getDichvusWithDoctors);
+//router.get('/services-doctors', serviceController.getDichvusWithDoctors);
 
 // GET /api/services - Lấy tất cả dịch vụ
 router.get('/service', serviceController.getDichvus);
 
 // GET /api/services/:id - Lấy dịch vụ theo ID
-router.get('/service/:id', serviceController.getDichvu);
+//router.get('/service/:id', serviceController.getDichvu);
 
-// POST /api/services - Tạo dịch vụ mới
-router.post('/service', serviceController.createDichvu);
+//  Cho phép upload ảnh
+router.post('/service', serviceController.upload.single('image'), serviceController.createDichvu);
+router.put('/service/:id', serviceController.upload.single('image'), serviceController.updateDichvu);
 
-// PUT /api/services/:id - Cập nhật dịch vụ
-router.put('/service/:id', serviceController.updateDichvu);
 
 // DELETE /api/services/:id - Xóa dịch vụ
 router.delete('/service/:id', serviceController.deleteDichvu);

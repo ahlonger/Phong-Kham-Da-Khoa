@@ -15,21 +15,46 @@ const DangKy = () => {
   const navigate = useNavigate();
 
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setAvatar(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // ✅ Danh sách MIME type hợp lệ
+  const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
+  if (!validTypes.includes(file.type)) {
+    alert("❌ Chỉ chấp nhận ảnh định dạng JPG, JPEG, PNG, GIF hoặc WEBP!");
+    e.target.value = ""; // reset input
+    setAvatar(null);
+    setAvatarPreview("");
+    return;
+  }
+
+  // ✅ Giới hạn kích thước ảnh (tối đa 2MB)
+  const maxSizeMB = 2;
+  if (file.size > maxSizeMB * 1024 * 1024) {
+    alert(` Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn ${maxSizeMB}MB.`);
+    e.target.value = ""; // reset input
+    setAvatar(null);
+    setAvatarPreview("");
+    return;
+  }
+
+  // ✅ Hợp lệ → đọc ảnh để hiển thị preview
+  setAvatar(file);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    setAvatarPreview(reader.result);
   };
+  reader.readAsDataURL(file);
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     let newErrors = {};
-
+    if(!name.trim() || !email.trim() || !password.trim() ||  !avatar){
+      alert("Bạn phải nhập đầy đủ thông tin")
+      return;
+    }
     if (!name.trim()) newErrors.name = "Họ và tên không được để trống.";
     if (!email.trim()) newErrors.email = "Email không được để trống.";
     else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Email không hợp lệ.";
@@ -154,11 +179,12 @@ const DangKy = () => {
             <label className="block mb-1 text-gray-600">Ảnh đại diện</label>
             <div className="flex items-center border rounded px-3 py-2">
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="w-full focus:outline-none"
-              />
+  type="file"
+  accept=".jpg,.jpeg,.png,.gif,.webp"
+  onChange={handleAvatarChange}
+  className="w-full focus:outline-none"
+/>
+
             </div>
             {avatarPreview && (
               <div className="mt-2">

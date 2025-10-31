@@ -29,14 +29,12 @@ const toTimeHHMM = (d) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-// YYYY-MM-DD cho <input type="date">
 const toDateInputValue = (d) => {
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 const fromDateInputValue = (s) => (s ? new Date(`${s}T00:00:00`) : null);
 
-// phút trong ngày từ "HH:MM"
 const minutesOf = (d) => d.getHours() * 60 + d.getMinutes();
 const parseHHMM = (s) => {
   if (!s) return null;
@@ -51,29 +49,28 @@ const LichHenHomNay = () => {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // ====== Bộ lọc ngày/giờ ======
-  const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date())); // YYYY-MM-DD
-  const [timeFrom, setTimeFrom] = useState(""); // "HH:MM" hoặc ""
-  const [timeTo, setTimeTo] = useState(""); // "HH:MM" hoặc ""
+  const [dateStr, setDateStr] = useState(() => toDateInputValue(new Date()));
+  const [timeFrom, setTimeFrom] = useState("");
+  const [timeTo, setTimeTo] = useState("");
+const [searchYear, setSearchYear] = useState("");
+const [searchMonth, setSearchMonth] = useState("");
+const [searchDay, setSearchDay] = useState("");
 
-  // Lấy thông tin bác sĩ đang đăng nhập
+  // ✅ Lấy thông tin bác sĩ đang đăng nhập từ sessionStorage (thay vì localStorage)
   const doctor = useMemo(() => {
-  try {
-    // Ưu tiên lấy bác sĩ, nếu không có thì lấy user thường
-    const b = JSON.parse(localStorage.getItem("bacsi"));
-    const u = JSON.parse(localStorage.getItem("user"));
-    const a = JSON.parse(localStorage.getItem("admin"));
-    return b || u || a || null;
-  } catch {
-    return null;
-  }
-}, []);
-
+    try {
+      const b = JSON.parse(sessionStorage.getItem("bacsi"));
+      const u = JSON.parse(sessionStorage.getItem("user"));
+      const a = JSON.parse(sessionStorage.getItem("admin"));
+      return b || u || a || null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const doctorDisplayName =
     doctor?.name || doctor?.fullName || doctor?.email || "Bác sĩ";
 
-  // Tạo “chìa khoá” so khớp lịch theo bác sĩ
   const doctorKeys = useMemo(() => {
     const name = doctor?.name || doctor?.fullName || "";
     const email = doctor?.email || "";
@@ -103,13 +100,12 @@ const LichHenHomNay = () => {
         setLoading(true);
         setErr("");
 
-        // Lấy tất cả booking
         const res = await Api.get("booking");
         const list = Array.isArray(res.data) ? res.data : [];
 
-        const selectedDate = fromDateInputValue(dateStr); // Date 00:00
-        const minMin = parseHHMM(timeFrom); // phút bắt đầu
-        const maxMin = parseHHMM(timeTo); // phút kết thúc
+        const selectedDate = fromDateInputValue(dateStr);
+        const minMin = parseHHMM(timeFrom);
+        const maxMin = parseHHMM(timeTo);
 
         const isMine = (item) => {
           const fields = [
@@ -140,28 +136,32 @@ const LichHenHomNay = () => {
         };
 
         const filtered = list
-          .filter((item) => {
-            const start = new Date(
-              item.thoigianhen || item.datetime || item.startTime
-            );
-            if (isNaN(start)) return false;
+  .filter((item) => {
+    const start = new Date(
+      item.thoigianhen || item.datetime || item.startTime
+    );
+    if (isNaN(start)) return false;
 
-            // Lọc theo ngày đã chọn
-            if (selectedDate && !sameLocalDate(start, selectedDate)) return false;
+    const year = start.getFullYear().toString();
+    const month = String(start.getMonth() + 1).padStart(2, "0");
+    const day = String(start.getDate()).padStart(2, "0");
 
-            // Lọc theo khoảng giờ (nếu có nhập)
-            const mins = minutesOf(start);
-            if (minMin != null && mins < minMin) return false;
-            if (maxMin != null && mins > maxMin) return false;
+    // ✅ lọc theo năm / tháng / ngày đã chọn
+    if (searchYear && year !== searchYear) return false;
+    if (searchMonth && month !== searchMonth) return false;
+    if (searchDay && day !== searchDay) return false;
 
-            // Lọc theo bác sĩ
-            return isMine(item);
-          })
+    const mins = minutesOf(start);
+    if (minMin != null && mins < minMin) return false;
+    if (maxMin != null && mins > maxMin) return false;
+
+    return isMine(item);
+  })
+
           .map((item) => {
             const start = new Date(
               item.thoigianhen || item.datetime || item.startTime
             );
-
             const tenBenhNhan =
               item.hoten ||
               item.benhNhan ||
@@ -169,11 +169,14 @@ const LichHenHomNay = () => {
               item.user?.name ||
               "Chưa rõ";
 
-            // Email / SĐT / Giới tính (nhiều nguồn dự phòng)
             const email =
               item.email || item.patient?.email || item.user?.email || "";
             const sdt =
-              item.sdt || item.phone || item.patient?.phone || item.user?.phone || "";
+              item.sdt ||
+              item.phone ||
+              item.patient?.phone ||
+              item.user?.phone ||
+              "";
             const genderRaw =
               item.gioitinh ||
               item.gender ||
@@ -218,16 +221,13 @@ const LichHenHomNay = () => {
       }
     };
 
-    // Gọi lại khi đổi bác sĩ, ngày hoặc khoảng giờ
     fetchForDoctorWithFilter();
     return () => {
       ignore = true;
     };
-  }, [doctor, doctorKeys, dateStr, timeFrom, timeTo]);
+  }, [doctor, doctorKeys, searchYear, searchMonth, searchDay, timeFrom, timeTo]);
 
   const totalBenhNhan = rows.length;
-
-  // Nút nhanh: hôm nay / +1 / +2 ngày
   const bumpDays = (n) => {
     const d = fromDateInputValue(dateStr) || new Date();
     const nd = new Date(d);
@@ -247,7 +247,6 @@ const LichHenHomNay = () => {
           isSidebarOpen ? "ml-64" : "ml-0"
         } p-6`}
       >
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8 bg-gray-300 rounded flex items-center justify-center">
@@ -266,72 +265,86 @@ const LichHenHomNay = () => {
           </div>
         </div>
 
-        {/* Bộ lọc */}
-        <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">Ngày</label>
-              <input
-                type="date"
-                className="border rounded px-3 py-2"
-                value={dateStr}
-                onChange={(e) => setDateStr(e.target.value)}
-              />
-            </div>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">
-                Giờ từ
-              </label>
-              <input
-                type="time"
-                className="border rounded px-3 py-2"
-                value={timeFrom}
-                onChange={(e) => setTimeFrom(e.target.value)}
-              />
-            </div>
+        {/* Bộ lọc Năm / Tháng / Ngày giống trang Quản lý lịch làm việc */}
+{/* Bộ lọc đơn giản giống ảnh bên phải */}
+<div className="bg-white p-4 rounded-lg shadow mb-4">
+  <div className="flex flex-wrap items-center gap-3 mb-2">
+    <label className="text-gray-700 text-sm font-medium">Năm:</label>
+    <select
+      value={searchYear}
+      onChange={(e) => setSearchYear(e.target.value)}
+      className="border border-gray-300 rounded px-2 py-1 text-sm"
+    >
+      <option value="">--</option>
+      {Array.from({ length: 6 }, (_, i) => 2025 - i).map((year) => (
+        <option key={year} value={year}>{year}</option>
+      ))}
+    </select>
 
-            <div>
-              <label className="block text-sm text-gray-600 mb-1">
-                Giờ đến
-              </label>
-              <input
-                type="time"
-                className="border rounded px-3 py-2"
-                value={timeTo}
-                onChange={(e) => setTimeTo(e.target.value)}
-              />
-            </div>
+    <label className="text-gray-700 text-sm font-medium">Tháng:</label>
+    <select
+      value={searchMonth}
+      onChange={(e) => setSearchMonth(e.target.value)}
+      className="border border-gray-300 rounded px-2 py-1 text-sm"
+    >
+      <option value="">--</option>
+      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+        <option key={month} value={String(month).padStart(2, "0")}>
+          {month}
+        </option>
+      ))}
+    </select>
 
-            <div className="ml-auto flex gap-2">
-              <button
-                className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
-                onClick={() => setDateStr(toDateInputValue(new Date()))}
-                title="Chuyển nhanh về hôm nay"
-              >
-                Hôm nay
-              </button>
-              <button
-                className="px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-gray-700"
-                onClick={() => {
-                  setTimeFrom("");
-                  setTimeTo("");
-                }}
-                title="Xóa lọc giờ"
-              >
-                Xóa giờ
-              </button>
-            </div>
-          </div>
-        </div>
+    <label className="text-gray-700 text-sm font-medium">Ngày:</label>
+    <select
+      value={searchDay}
+      onChange={(e) => setSearchDay(e.target.value)}
+      className="border border-gray-300 rounded px-2 py-1 text-sm"
+    >
+      <option value="">--</option>
+      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+        <option key={day} value={String(day).padStart(2, "0")}>
+          {day}
+        </option>
+      ))}
+    </select>
 
-        {/* Nội dung */}
+    {/* Nút Tất cả */}
+    <button
+      onClick={() => {
+        setSearchYear("");
+        setSearchMonth("");
+        setSearchDay("");
+      }}
+      className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded"
+    >
+      Tất cả
+    </button>
+
+    {/* Nút Hôm nay */}
+    <button
+      onClick={() => {
+        const now = new Date();
+        setSearchYear(now.getFullYear().toString());
+        setSearchMonth(String(now.getMonth() + 1).padStart(2, "0"));
+        setSearchDay(String(now.getDate()).padStart(2, "0"));
+      }}
+      className="bg-green-200 hover:bg-green-300 text-green-800 text-sm px-3 py-1 rounded"
+    >
+      Hôm nay
+    </button>
+  </div>
+</div>
+
+
+
+        {/* Bảng dữ liệu */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-4">
             Danh sách lịch hẹn{" "}
             <span className="ml-2 text-sm text-gray-600">
-              (Ngày:{" "}
-              {fromDateInputValue(dateStr)?.toLocaleDateString("vi-VN")})
+              (Ngày: {fromDateInputValue(dateStr)?.toLocaleDateString("vi-VN")})
             </span>
             <span className="ml-2 text-sm font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700">
               Số lượng: {totalBenhNhan}
@@ -389,7 +402,9 @@ const LichHenHomNay = () => {
                         className="text-center px-4 py-6 text-gray-500"
                       >
                         Không có lịch hẹn cho ngày{" "}
-                        {fromDateInputValue(dateStr)?.toLocaleDateString("vi-VN")}
+                        {fromDateInputValue(dateStr)?.toLocaleDateString(
+                          "vi-VN"
+                        )}
                         {timeFrom || timeTo ? (
                           <>
                             {" "}

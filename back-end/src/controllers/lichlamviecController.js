@@ -3,11 +3,19 @@ const workScheduleModel = require("../models/lichlamviecModel");
 exports.list = async (req, res) => {
   try {
     const data = await workScheduleModel.getAllWorkSchedules();
-    res.json(data);
+
+    // ✅ thêm mapping để đảm bảo có trường doctorName cho FE dễ đọc
+    const result = data.map(item => ({
+      ...item,
+      doctorName: item.doctor ? item.doctor.name : "Không rõ",
+    }));
+
+    res.json(result);
   } catch (e) {
     res.status(500).json({ error: "List failed", detail: String(e) });
   }
 };
+
 
 exports.create = async (req, res) => {
   try {

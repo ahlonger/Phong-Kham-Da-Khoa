@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   FaHome,
   FaUser,
@@ -10,14 +10,36 @@ import {
   FaBars,
   FaTimes,
 } from "react-icons/fa";
+import Api from "../components/Api"; // ✅ thêm import để gọi API
 
 const Navbar2 = ({ isOpen, toggle }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const linkClass = (path) =>
     location.pathname === path
       ? "flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md"
       : "flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 rounded-md";
+
+  // ✅ Thêm hàm xử lý logout
+  const handleLogout = async () => {
+    try {
+      const storedUser = JSON.parse(sessionStorage.getItem("user"));
+      if (storedUser) {
+        // Gửi yêu cầu logout để cập nhật status trong DB
+        await Api.post("logout", { id: storedUser.id });
+      }
+
+      // Xóa thông tin người dùng khỏi localStorage
+      sessionStorage.removeItem("user");
+
+      // Quay về trang đăng nhập
+      navigate("/dangnhap");
+    } catch (err) {
+      console.error("❌ Lỗi khi đăng xuất:", err);
+      alert("Đăng xuất thất bại, thử lại sau!");
+    }
+  };
 
   return (
     <>
@@ -56,14 +78,23 @@ const Navbar2 = ({ isOpen, toggle }) => {
             </Link>
 
             <div>
-              <Link to="/quan-ly-lich-lam-viec" className={linkClass("/quan-ly-lich-lam-viec")}>
+              <Link
+                to="/quan-ly-lich-lam-viec"
+                className={linkClass("/quan-ly-lich-lam-viec")}
+              >
                 <FaCalendarAlt /> Quản lý lịch làm việc
               </Link>
               <div className="ml-6 mt-1 flex flex-col gap-1">
-                <Link to="/lich-da-dang-ky" className={linkClass("/lich-da-dang-ky")}>
+                <Link
+                  to="/lich-da-dang-ky"
+                  className={linkClass("/lich-da-dang-ky")}
+                >
                   <FaCalendarAlt className="text-sm" /> Lịch đã đăng ký
                 </Link>
-                <Link to="/lich-hen-hom-nay" className={linkClass("/lich-hen-hom-nay")}>
+                <Link
+                  to="/lich-hen-hom-nay"
+                  className={linkClass("/lich-hen-hom-nay")}
+                >
                   <FaCalendarAlt className="text-sm" /> Lịch hẹn hôm nay
                 </Link>
               </div>
@@ -79,8 +110,12 @@ const Navbar2 = ({ isOpen, toggle }) => {
           </nav>
         </div>
 
+        {/* ✅ Nút Đăng xuất có hành động */}
         <div className="px-4 py-4 border-t">
-          <button className="flex items-center gap-2 text-red-600 hover:text-red-700">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-red-600 hover:text-red-700"
+          >
             <FaSignOutAlt /> Đăng xuất
           </button>
         </div>

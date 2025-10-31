@@ -70,14 +70,33 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Email hoặc mật khẩu không đúng" });
     }
 
+    await userModel.updateUser(user.id, { status: "Đang hoạt động" });
+    //  Lấy lại user mới nhất để trả cho FE
+    const refreshedUser = await userModel.findUserById(user.id);
+
     // Không trả password/token reset về FE
-    const { password: _pw, resetToken, resetExpire, ...safeUser } = user;
+    const { password: _pw, resetToken, resetExpire, ...safeUser } = refreshedUser;
     return res.json({ message: "Đăng nhập thành công", user: safeUser });
   } catch (e) {
     console.error("POST /api/login error:", e);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+const logoutUser = async (req, res) => {
+  try {
+    const { id } = req.body;
+    console.log("📥 Logout ID nhận được:", id);
+    const updated = await userModel.updateUser(id, { status: "Không hoạt động" });
+    console.log("✅ Đã cập nhật status:", updated.status);
+    res.json({ message: "Đã đăng xuất thành công" });
+  } catch (err) {
+    console.error("POST /logout error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 
 const listUsers = async (req, res) => {
   try {
@@ -97,7 +116,7 @@ const updateUser = async (req, res) => {
     const data = req.body;
 
     if (req.file) {
-      data.avatar = `/uploads/user/${req.file.filename}`;
+      data.avatar = `uploads/user/${req.file.filename}`;
     }
 
     if (data.dichvuId !== undefined) data.dichvuId = Number(data.dichvuId);
@@ -107,6 +126,13 @@ const updateUser = async (req, res) => {
     if (data.password) {
       data.password = await bcrypt.hash(data.password, 10);
     }
+
+    // 🟢 THÊM
+    Object.keys(data).forEach((key) => {
+      if (data[key] === "" || data[key] === null || data[key] === undefined) {
+        delete data[key];
+      }
+    });
 
     const updated = await userModel.updateUser(id, data);
     res.json(updated);
@@ -159,6 +185,51 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// 🟢 Lấy thông tin chi tiết user theo id
+const getUserById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const user = await userModel.findUserById(id);
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
+    }
+    res.json(user);
+  } catch (err) {
+    console.error("GET /api/user/:id error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// 🗑️ Xóa người dùng theo ID
+// 🗑️ Xóa người dùng theo ID (có kiểm tra)
+const deleteUser = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const user = await userModel.findUserById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    //  Không cho xóa nếu tài khoản đang hoạt động
+    if (user.status === "Đang hoạt động") {
+      return res.status(400).json({
+        message: "Không thể xóa tài khoản đang hoạt động. Hãy khóa tài khoản trước.",
+      });
+    }
+
+    //  Không cho xóa admin chính
+    if (user.role === "admin") {
+      return res.status(403).json({ message: "Không thể xóa tài khoản quản trị viên!" });
+    }
+
+    await userModel.deleteUser(id);
+    res.json({ message: `✅ Đã xóa tài khoản ${user.name || `ID ${id}`} thành công!` });
+  } catch (err) {
+    console.error("DELETE /api/user/:id error:", err);
+    res.status(500).json({ message: "Lỗi server khi xóa người dùng" });
+  }
+};
 
 
 module.exports = {
@@ -168,5 +239,8 @@ module.exports = {
  upload,
  updateUser,
  forgotPassword,
- resetPassword
+ resetPassword,
+ getUserById,
+ deleteUser,
+ logoutUser
 }

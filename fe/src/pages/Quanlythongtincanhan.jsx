@@ -1,21 +1,30 @@
+// src/pages/QuanLyThongTinCaNhan.jsx
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Api from "../components/Api";
 import XemLichHen from "./XemLichHen";
+import { useNavigate, useLocation } from "react-router-dom";
+import ThongTinCaNhanChiTietUser from "./ThongtincanhanchitietUser";
 
 const QuanLyThongTinCaNhan = () => {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("lichhen");
+  const [activeTab, setActiveTab] = useState("thongtin");
+  const [editMode, setEditMode] = useState(false); // 🟢 Thêm trạng thái edit/view
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
     gioitinh: "",
+    avatar: "",
+    file: null,
   });
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
     if (storedUser) {
       setUser(storedUser);
       setForm({
@@ -24,34 +33,93 @@ const QuanLyThongTinCaNhan = () => {
         phone: storedUser.phone || "",
         address: storedUser.address || "",
         gioitinh: storedUser.gioitinh || "",
+        avatar: storedUser.avatar || "",
+        file: null,
       });
     }
   }, []);
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      // gọi API PUT để cập nhật toàn bộ thông tin, bao gồm cả email
-      const res = await Api.put(`/user/${user.id}`, form);
-      alert("Cập nhật thông tin thành công!");
+  // ✅ Cleanup URL blob
+  useEffect(() => {
+    return () => {
+      if (form.avatar && form.avatar.startsWith("blob:")) {
+        URL.revokeObjectURL(form.avatar);
+      }
+    };
+  }, [form.avatar]);
 
-      // cập nhật localStorage và state user
-      localStorage.setItem("user", JSON.stringify(res.data));
-      setUser(res.data);
+  // ✅ Cập nhật thông tin
+ const handleUpdate = async (e) => {
+  e.preventDefault();
 
-      // ✅ reset form sau khi cập nhật thành công
-      setForm({
-        name: "",
-        email: "",
-        phone: "",
-        address: "",
-        gioitinh: "",
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Cập nhật thất bại!");
+  // ⚡ Kiểm tra dữ liệu trống
+  if (
+    !form.name.trim() ||
+    !form.email.trim() ||
+    !form.phone.trim() ||
+    !form.address.trim() ||
+    !form.gioitinh.trim()
+  ) {
+    alert(" Không thể cập nhật, vui lòng điền đầy đủ thông tin!");
+    return;
+  }
+
+  // ⚡ Kiểm tra định dạng email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(form.email)) {
+    alert(" Email không hợp lệ!");
+    return;
+  }
+
+  // ⚡ Kiểm tra số điện thoại (10 số)
+  if (!/^\d{10}$/.test(form.phone)) {
+    alert(" Số điện thoại phải gồm 10 chữ số!");
+    return;
+  }
+
+  // ⚡ Kiểm tra avatar (nếu có chọn mới)
+  if (form.file) {
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
+    if (!validTypes.includes(form.file.type)) {
+      alert(" Chỉ chấp nhận ảnh JPG, JPEG, PNG, GIF hoặc WEBP!");
+      return;
     }
-  };
+
+    const maxSizeMB = 2;
+    if (form.file.size > maxSizeMB * 1024 * 1024) {
+      alert(` Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn ${maxSizeMB}MB.`);
+      return;
+    }
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append("name", form.name);
+    formData.append("email", form.email);
+    formData.append("phone", form.phone);
+    formData.append("address", form.address);
+    formData.append("gioitinh", form.gioitinh);
+    if (form.file) formData.append("avatar", form.file);
+
+    const res = await Api.put(`/user/${user.id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    alert("✅ Cập nhật thông tin thành công!");
+    sessionStorage.setItem("user", JSON.stringify(res.data));
+    setUser(res.data);
+    setForm({
+      ...form,
+      file: null,
+      avatar: res.data.avatar || form.avatar,
+    });
+    setEditMode(false);
+  } catch (err) {
+    console.error(err);
+    alert(" Cập nhật thất bại!");
+  }
+};
+
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -64,7 +132,10 @@ const QuanLyThongTinCaNhan = () => {
         {/* Tabs */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => setActiveTab("lichhen")}
+            onClick={() => {
+              setActiveTab("lichhen");
+              setEditMode(false);
+            }}
             className={`px-6 py-2 rounded-l-lg font-semibold ${
               activeTab === "lichhen"
                 ? "bg-blue-600 text-white"
@@ -74,99 +145,170 @@ const QuanLyThongTinCaNhan = () => {
             Lịch hẹn của tôi
           </button>
           <button
-            onClick={() => setActiveTab("thongtin")}
+            onClick={() => {
+              setActiveTab("thongtin");
+              setEditMode(false);
+            }}
             className={`px-6 py-2 rounded-r-lg font-semibold ${
               activeTab === "thongtin"
                 ? "bg-blue-600 text-white"
                 : "bg-white text-blue-600 border"
             }`}
           >
-            Cập nhật thông tin
+            Thông tin cá nhân
           </button>
         </div>
 
         {/* Nội dung */}
         {activeTab === "lichhen" && <XemLichHen />}
-        {activeTab === "thongtin" && (
-          <div className="bg-white rounded-xl shadow-md p-5">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4">
-              Cập nhật thông tin cá nhân
-            </h3>
-            <form onSubmit={handleUpdate} className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium">Họ và tên</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full border px-3 py-2 rounded-md"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium">Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full border px-3 py-2 rounded-md"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium">
-                  Số điện thoại
-                </label>
-                <input
-  type="text"
-  value={form.phone}
+        {activeTab === "thongtin" &&
+          (editMode ? (
+            // 🟢 Chế độ chỉnh sửa
+            <div className="bg-white rounded-xl shadow-md p-5">
+              <h3 className="text-lg font-semibold text-blue-600 mb-4">
+                Cập nhật thông tin cá nhân
+              </h3>
+              <form onSubmit={handleUpdate} className="space-y-3">
+                {/* ẢNH */}
+                <div>
+                  <label className="block text-sm font-medium">Ảnh đại diện</label>
+                  {form.avatar && (
+                    <img
+                      src={
+                        form.avatar.startsWith("blob:")
+                          ? form.avatar
+                          : `http://localhost:3000/${form.avatar}`
+                      }
+                      alt="Avatar"
+                      className="w-32 h-32 object-cover rounded-full mb-3 border"
+                    />
+                  )}
+                  <input
+  type="file"
+  accept=".jpg,.jpeg,.png,.gif,.webp"
   onChange={(e) => {
-    // chỉ giữ lại ký tự số và cắt tối đa 10 ký tự
-    const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
-    setForm({ ...form, phone: onlyDigits });
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // ✅ Danh sách định dạng hợp lệ
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      alert(" Chỉ chấp nhận ảnh JPG, JPEG, PNG, GIF hoặc WEBP!");
+      e.target.value = "";
+      return;
+    }
+
+    // ✅ Giới hạn dung lượng ảnh (≤ 2MB)
+    const maxSizeMB = 2;
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      alert(` Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn ${maxSizeMB}MB.`);
+      e.target.value = "";
+      return;
+    }
+
+    // ✅ Hợp lệ → hiển thị preview
+    const previewUrl = URL.createObjectURL(file);
+    setForm({
+      ...form,
+      avatar: previewUrl,
+      file,
+    });
   }}
-  inputMode="numeric"       // giúp hiển thị bàn phím số trên mobile
-  maxLength={10}            // chặn nhập hơn 10 ký tự
-  pattern="\d{10}"          // để HTML5 validation kiểm tra đúng 10 số
-  placeholder="Nhập 10 số điện thoại"
   className="w-full border px-3 py-2 rounded-md"
 />
 
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium">Địa chỉ</label>
-                <input
-                  type="text"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  className="w-full border px-3 py-2 rounded-md"
-                />
-              </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium">Giới tính</label>
-                <select
-                  value={form.gioitinh}
-                  onChange={(e) => setForm({ ...form, gioitinh: e.target.value })}
-                  className="w-full border px-3 py-2 rounded-md"
-                >
-                  <option value="">-- Chọn giới tính --</option>
-                  <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                  <option value="Khác">Khác</option>
-                </select>
-              </div>
+                {/* Họ tên */}
+                <div>
+                  <label className="block text-sm font-medium">Họ và tên</label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full border px-3 py-2 rounded-md"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-              >
-                Cập nhật
-              </button>
-            </form>
-          </div>
-        )}
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium">Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full border px-3 py-2 rounded-md"
+                  />
+                </div>
+
+                {/* Số điện thoại */}
+                <div>
+                  <label className="block text-sm font-medium">Số điện thoại</label>
+                  <input
+                    type="text"
+                    value={form.phone}
+                    onChange={(e) => {
+                      const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setForm({ ...form, phone: onlyDigits });
+                    }}
+                    className="w-full border px-3 py-2 rounded-md"
+                  />
+                </div>
+
+                {/* Địa chỉ */}
+               <div>
+  <label className="block text-sm font-medium">Địa chỉ</label>
+  <input
+    type="text"
+    value={form.address}
+    onChange={(e) => {
+      // ✅ Chỉ cho phép chữ, số, khoảng trắng, dấu phẩy, dấu gạch ngang
+      const value = e.target.value.replace(/[^a-zA-ZÀ-ỹ0-9\s,\-]/g, "");
+      setForm({ ...form, address: value });
+    }}
+    className="w-full border px-3 py-2 rounded-md"
+  />
+</div>
+
+
+                {/* Giới tính */}
+                <div>
+                  <label className="block text-sm font-medium">Giới tính</label>
+                  <select
+                    value={form.gioitinh}
+                    onChange={(e) => setForm({ ...form, gioitinh: e.target.value })}
+                    className="w-full border px-3 py-2 rounded-md"
+                  >
+                    <option value="">-- Chọn giới tính --</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(false)}
+                    className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                  >
+                    Lưu thay đổi
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            // 🟢 Chế độ xem chi tiết
+            <ThongTinCaNhanChiTietUser onEdit={() => setEditMode(true)} />
+          ))}
       </div>
     </div>
   );

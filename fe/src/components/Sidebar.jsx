@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaHome, FaUser, FaComments, FaBox, FaCalendarCheck, FaCog } from "react-icons/fa";
+import { FaHome, FaUser, FaComments, FaBox, FaCalendarCheck, FaCog,FaCalendarAlt } from "react-icons/fa";
 
 const Sidebar = () => {
   const location = useLocation();
@@ -40,6 +40,13 @@ const Sidebar = () => {
             <FaCalendarCheck /> <span>Lịch hẹn</span>
           </Link>
         </li>
+        <li>
+  <Link to="/admin-lich-lam-viec" className={linkClass("/admin/lich-lam-viec")}>
+    <FaCalendarCheck /> <span>Lịch làm việc</span>
+  </Link>
+</li>
+
+
         <li>
           <Link to="/cai-dat" className={linkClass("/cai-dat")}>
             <FaCog /> <span>Cài đặt</span>

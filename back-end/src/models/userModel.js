@@ -11,7 +11,7 @@ const createUser = async (data) => {
     avatar: data.avatar ?? null,
     role: data.role,
     dichvuId: data.dichvuId ? Number(data.dichvuId) : undefined,
-
+status: data.status ?? "Không hoạt động",
     // mới:
     chuyenmon: data.chuyenmon ?? null,
     namkinhnghiem: data.namkinhnghiem ? Number(data.namkinhnghiem) : null,
@@ -34,8 +34,9 @@ const findUsers = async (role) =>
   prisma.user.findMany({
     where: role ? { role } : undefined,
     select: {
-      id: true, name: true, email: true, role: true, avatar: true,
-       chuyenmon: true, namkinhnghiem: true, gioithieu: true, thanhtuu: true,dichvuId: true,
+      id: true, name: true, email: true, role: true, avatar: true,phone: true, status: true,     // 🟢 thêm dòng này
+      address: true,    // 🟢 thêm dòng này
+      chuyenmon: true, namkinhnghiem: true, gioithieu: true, thanhtuu: true,dichvuId: true,
       dichvu: { select: {id: true, title: true } },
     },
     orderBy: { id: 'desc' },
@@ -56,7 +57,7 @@ const updateUser = async (id, data) => {
     gioithieu: data.gioithieu,
     thanhtuu: data.thanhtuu,
     chucvu: data.chucvu,
-
+    status: data.status,
     phone: data.phone,
     address: data.address,
     gioitinh: data.gioitinh,
@@ -98,6 +99,35 @@ async function clearResetToken(id) {
     data: { resetToken: null, resetExpire: null },
   });
 }
+
+// 🗑️ Xóa user khỏi database
+const deleteUser = async (id) => {
+  return prisma.user.delete({
+    where: { id: Number(id) },
+  });
+};
+
+// 🟢 Lấy thông tin user theo id
+const findUserById = async (id) => {
+  return prisma.user.findUnique({
+    where: { id: Number(id) },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      gioitinh: true,
+      chuyenmon: true,
+      namkinhnghiem: true,
+      gioithieu: true,
+      thanhtuu: true,
+      avatar: true,
+      role: true,
+    },
+  });
+};
+
 module.exports = { 
   createUser, 
   findUserByEmail,
@@ -106,4 +136,7 @@ module.exports = {
   setResetTokenByEmail,
   findByValidResetToken,
   updatePasswordById,
-  clearResetToken,};
+  clearResetToken,
+  findUserById,
+  deleteUser
+};

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar2 from "../components/Navbar2";
 import Api from "../components/Api";
-
+import { useNavigate } from "react-router-dom";  
 const ThongTinCaNhan = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -18,35 +18,51 @@ const ThongTinCaNhan = () => {
     thanhtuu: "",
   });
   const [avatarFile, setAvatarFile] = useState(null);
+  const navigate = useNavigate();
+  //  Lấy thông tin người dùng từ sessionStorage
+  //  Lấy thông tin người dùng trực tiếp từ BE (GET /user/:id)
 
-  // ✅ Lấy thông tin người dùng từ localStorage
+  // ✅ Kiểm tra đăng nhập
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      setUser(storedUser);
-      setForm({
-        name: storedUser.name || "",
-        email: storedUser.email || "",
-        phone: storedUser.phone || "",
-        address: storedUser.address || "",
-        gioitinh: storedUser.gioitinh || "",
-        chuyenmon: storedUser.chuyenmon || "",
-        namkinhnghiem: storedUser.namkinhnghiem || "",
-        gioithieu: storedUser.gioithieu || "",
-        thanhtuu: storedUser.thanhtuu || "",
-      });
-      setSelectedImage(
-        storedUser.avatar ? `http://localhost:3000${storedUser.avatar}` : null
-      );
-    }
-  }, []);
+    const storedUser = JSON.parse(sessionStorage.getItem("user"));
+    if (!storedUser || !storedUser.id) return;
+
+    // Nếu có user thì gọi API lấy thông tin
+    const fetchUser = async () => {
+      try {
+        const res = await Api.get(`user/${storedUser.id}`);
+        const data = res.data;
+        setUser(data);
+        setForm({
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          address: data.address || "",
+          gioitinh: data.gioitinh || "",
+          chuyenmon: data.chuyenmon || "",
+          namkinhnghiem: data.namkinhnghiem || "",
+          gioithieu: data.gioithieu || "",
+          thanhtuu: data.thanhtuu || "",
+        });
+        setSelectedImage(
+          data.avatar ? `http://localhost:3000/${data.avatar}` : null
+        );
+      } catch (err) {
+        console.error("❌ Lỗi khi tải thông tin người dùng:", err);
+        alert("Không tải được thông tin cá nhân");
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
+
 
   // ✅ Xử lý khi chọn ảnh mới
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setAvatarFile(file);
-      setSelectedImage(URL.createObjectURL(file));
+      setSelectedImage(URL.createObjectURL(file)); // hiển thị ảnh mới ngay
     }
   };
 
@@ -74,9 +90,17 @@ const ThongTinCaNhan = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // 🟢 THÊM: cập nhật lại form, ảnh và localStorage sau khi lưu thành công
       alert("✅ Cập nhật thành công!");
-      localStorage.setItem("user", JSON.stringify(res.data));
-      setUser(res.data);
+      const updatedUser = { ...user, ...res.data };
+      setUser(updatedUser);
+      setForm({ ...form, ...updatedUser });
+      if (updatedUser.avatar) {
+        setSelectedImage(`http://localhost:3000/${updatedUser.avatar}`);
+      }
+      sessionStorage.setItem("user", JSON.stringify(updatedUser));
+      // ✅ Sau khi cập nhật → chuyển sang trang hiển thị chi tiết
+    navigate("/bacsi");
     } catch (err) {
       console.error("Lỗi khi cập nhật:", err);
       alert("❌ Cập nhật thất bại!");
@@ -101,9 +125,10 @@ const ThongTinCaNhan = () => {
           Quản Lý Thông Tin Bác Sĩ
         </h1>
 
-        <div className="bg-white shadow p-6 rounded-lg max-w-2xl mx-auto">
-          {/* Ảnh đại diện */}
-          <div className="flex flex-col items-center mb-8">
+        {/* Form + Ảnh nằm ngang */}
+        <div className="bg-white shadow p-6 rounded-lg max-w-6xl mx-auto flex gap-10 items-start">
+          {/* Cột trái: Ảnh đại diện */}
+          <div className="flex flex-col items-center w-1/3">
             <div className="w-40 h-40 rounded-full overflow-hidden border shadow">
               {selectedImage ? (
                 <img
@@ -128,9 +153,10 @@ const ThongTinCaNhan = () => {
             </label>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
+          {/* Cột phải: Form */}
+          <form onSubmit={handleSave} className="w-2/3 grid grid-cols-2 gap-4">
+            {/* Họ tên */}
+            <div className="col-span-2">
               <label className="block text-sm font-medium">Họ tên</label>
               <input
                 name="name"
@@ -141,6 +167,7 @@ const ThongTinCaNhan = () => {
               />
             </div>
 
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium">Email</label>
               <input
@@ -152,6 +179,7 @@ const ThongTinCaNhan = () => {
               />
             </div>
 
+            {/* Số điện thoại */}
             <div>
               <label className="block text-sm font-medium">Số điện thoại</label>
               <input
@@ -169,6 +197,7 @@ const ThongTinCaNhan = () => {
               />
             </div>
 
+            {/* Địa chỉ */}
             <div>
               <label className="block text-sm font-medium">Địa chỉ</label>
               <input
@@ -180,6 +209,7 @@ const ThongTinCaNhan = () => {
               />
             </div>
 
+            {/* Giới tính */}
             <div>
               <label className="block text-sm font-medium">Giới tính</label>
               <select
@@ -195,6 +225,7 @@ const ThongTinCaNhan = () => {
               </select>
             </div>
 
+            {/* Chuyên môn */}
             <div>
               <label className="block text-sm font-medium">Chuyên khoa</label>
               <input
@@ -207,6 +238,7 @@ const ThongTinCaNhan = () => {
               />
             </div>
 
+            {/* Kinh nghiệm */}
             <div>
               <label className="block text-sm font-medium">Kinh nghiệm làm việc</label>
               <input
@@ -218,20 +250,22 @@ const ThongTinCaNhan = () => {
                 placeholder="VD: 5 (năm)"
               />
             </div>
-
-            <div>
+                
+            {/* Giới thiệu */}
+            <div className="col-span-2">
               <label className="block text-sm font-medium">Giới thiệu bản thân</label>
               <textarea
                 name="gioithieu"
                 value={form.gioithieu}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
-                rows="4"
+                rows="3"
                 placeholder="Mô tả chi tiết về bản thân..."
               ></textarea>
             </div>
 
-            <div>
+            {/* Thành tựu */}
+            <div className="col-span-2">
               <label className="block text-sm font-medium">Thành tựu</label>
               <textarea
                 name="thanhtuu"
@@ -243,12 +277,15 @@ const ThongTinCaNhan = () => {
               ></textarea>
             </div>
 
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-            >
-              Lưu Thay Đổi
-            </button>
+            {/* Nút lưu */}
+            <div className="col-span-2 flex justify-end">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+              >
+                Lưu Thay Đổi
+              </button>
+            </div>
           </form>
         </div>
       </main>

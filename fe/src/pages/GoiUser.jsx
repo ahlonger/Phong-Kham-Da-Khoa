@@ -80,7 +80,7 @@ const GoiUser = () => {
     // Lấy user (nếu có) để auto-fill
     let storedUser = null;
     try {
-      storedUser = JSON.parse(localStorage.getItem("user") || "null");
+      storedUser = JSON.parse(sessionStorage.getItem("user") || "null");
     } catch {
       storedUser = null;
     }
@@ -114,7 +114,7 @@ const GoiUser = () => {
       soTienCoc: soTienCocMacDinh,
     };
 
-    localStorage.setItem("pendingBooking", JSON.stringify(pendingBooking));
+    sessionStorage.setItem("pendingBooking", JSON.stringify(pendingBooking));
 
     // Điều hướng sang trang thanh toán
     // ⚠️ Nếu route của bạn khác (vd "/payment"), sửa lại bên dưới cho đúng:

@@ -26,6 +26,9 @@ import ChatWidget from "./components/Chat";
 import QuenMatKhau from "./components/Quenmatkhau";
 import Datlaimatkhau from "./components/Datlaimatkhau";
 import QuanLyThongTinCaNhan from "./pages/Quanlythongtincanhan";
+import AdminLichLamViec from "./pages/DuyetLichLamViec";
+import ThongTinCaNhanChiTiet from "./pages/Thongtinchitiet";
+import ThongTinCaNhanChiTietUser from "./pages/ThongtincanhanchitietUser";
 const App = () => {
   return (
     <Router>
@@ -44,13 +47,19 @@ const App = () => {
         <Route path="/quen-mat-khau" element={<QuenMatKhau />} />
         <Route path="/reset-password/:token" element={<Datlaimatkhau />} />
         <Route path="/quan-ly-thong-tin-ca-nhan" element={<QuanLyThongTinCaNhan />} />
+        <Route path="/thong-tin-ca-nhan-user" element={<ThongTinCaNhanChiTietUser />} />
+
         {/* BacSi */}
-        <Route path="/bacsi" element={<ThongTinCaNhan />} />
+        <Route path="/bacsi" element={<ThongTinCaNhanChiTiet />} />
         <Route path="/dich-vu" element={<DichVu />} />
         <Route path="/quan-ly-lich-lam-viec" element={<QuanLyLichLamViec />} />
         <Route path="/lich-da-dang-ky" element={<LichDaDangKy />} />
         <Route path="/lich-hen-hom-nay" element={<LichHenHomNay />} />
         <Route path="/cai-dat-bac-si" element={<CaiDatBacSi />} />
+        {/* <Route path="/thong-tin-ca-nhan-chi-tiet" element={<ThongTinCaNhanChiTiet />} /> */}
+        <Route path="/bac-si-chinh-sua" element={<ThongTinCaNhan />} />
+
+
 
         {/* Admin */}
         <Route path="/admin" element={<TrangChu />} />
@@ -59,6 +68,8 @@ const App = () => {
         <Route path="/dich-vu-goi" element={<DichVuGoi />} />
         <Route path="/lich-hen" element={<LichHen />} />
         <Route path="/cai-dat" element={<CaiDat />} />
+        <Route path="/admin-lich-lam-viec" element={<AdminLichLamViec />} />
+
       </Routes>
     </Router>
   );

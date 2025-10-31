@@ -13,6 +13,10 @@ const LichHen = () => {
   const [lichHenData, setLichHenData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+// ở đầu component
+const [y, setY] = useState("");
+const [m, setM] = useState("");
+const [d, setD] = useState("");
 
   //  Lấy dữ liệu lịch hẹn từ API khi load component
   useEffect(() => {
@@ -40,20 +44,51 @@ const LichHen = () => {
       });
   }, []);
 
+  const rangeFromYMD = (y, m, d) => {
+  if (!y && !m && !d) return null;           // không lọc
+
+  if (y && m && !d) {                        // cả tháng
+    const start = dayjs(`${y}-${m}-01`).startOf("day");
+    const end = dayjs(start).endOf("month");
+    return { start, end };
+  }
+
+  if (y && !m && !d) {                       // cả năm
+    const start = dayjs(`${y}-01-01`).startOf("day");
+    const end = dayjs(`${y}-12-31`).endOf("day");
+    return { start, end };
+  }
+
+  if (y && m && d) {                         // đúng ngày
+    const start = dayjs(`${y}-${m}-${d}`).startOf("day");
+    const end = dayjs(start).endOf("day");
+    return { start, end };
+  }
+
+  return null; // các tổ hợp khác bỏ qua (ví dụ có tháng nhưng chưa có năm)
+};
+
   // Lọc tìm kiếm + ngày
-  const filteredData = lichHenData.filter((item) => {
-    const textOK =
-      item.benhNhan.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.bacSi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.dichVu.toLowerCase().includes(searchTerm.toLowerCase());
+const filteredData = lichHenData.filter((item) => {
+  const textOK =
+    item.benhNhan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.bacSi.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.dichVu.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (!selectedDate) return textOK;
+  const rng = rangeFromYMD(y, m, d);
+  if (!rng) return textOK;
 
-    // So sánh theo ngày (YYYY-MM-DD)
-    const itemDateStr = item.rawDate ? dayjs(item.rawDate).format("YYYY-MM-DD") : "";
-    const dateOK = itemDateStr === selectedDate;
-    return textOK && dateOK;
-  });
+  const when = item.rawDate ? dayjs(item.rawDate) : null;
+  if (!when || !when.isValid()) return false;
+
+  return (
+    textOK &&
+    when.isAfter(rng.start.subtract(1, "ms")) &&
+    when.isBefore(rng.end.add(1, "ms"))
+  );
+});
+
+
 
   // Xuất Excel
   const handleExportReport = () => {
@@ -92,11 +127,11 @@ const LichHen = () => {
             : item
         )
       );
-      alert("✅ Đã huỷ lịch hẹn.");
+      alert(" Đã huỷ lịch hẹn.");
       setIsModalOpen(false);
     } catch (e) {
       console.error("Hủy lịch thất bại:", e);
-      alert("❌ Hủy lịch thất bại. Vui lòng thử lại.");
+      alert(" Hủy lịch thất bại. Vui lòng thử lại.");
     }
   };
 
@@ -111,7 +146,7 @@ const LichHen = () => {
             : item
         )
       );
-      alert("✅ Xác nhận lịch hẹn thành công!");
+      alert(" Xác nhận lịch hẹn thành công!");
       setIsModalOpen(false);
     } catch (e) {
       console.error("Xác nhận lịch thất bại:", e);
@@ -142,23 +177,65 @@ const LichHen = () => {
            
 
             {/* Bộ lọc ngày */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <input
-                type="date"
-                className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-auto"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-              {selectedDate && (
-                <button
-                  onClick={() => setSelectedDate("")}
-                  className="px-3 py-2 rounded-lg border hover:bg-gray-50"
-                  title="Xoá lọc ngày"
-                >
-                  Xoá ngày
-                </button>
-              )}
-            </div>
+           {/* Bộ lọc Năm / Tháng / Ngày */}
+<div className="flex flex-wrap items-center gap-3">
+  <label className="text-sm text-gray-700">Năm:</label>
+  <select
+    className="border rounded px-2 py-1"
+    value={y}
+    onChange={(e) => setY(e.target.value)}
+  >
+    <option value="">--</option>
+    {Array.from({ length: 6 }, (_, i) => 2025 - i).map((yy) => (
+      <option key={yy} value={String(yy)}>{yy}</option>
+    ))}
+  </select>
+
+  <label className="text-sm text-gray-700">Tháng:</label>
+  <select
+    className="border rounded px-2 py-1"
+    value={m}
+    onChange={(e) => setM(e.target.value)}
+  >
+    <option value="">--</option>
+    {Array.from({ length: 12 }, (_, i) => i + 1).map((mm) => (
+      <option key={mm} value={String(mm).padStart(2, "0")}>{mm}</option>
+    ))}
+  </select>
+
+  <label className="text-sm text-gray-700">Ngày:</label>
+  <select
+    className="border rounded px-2 py-1"
+    value={d}
+    onChange={(e) => setD(e.target.value)} // chọn "--" sẽ setD("")
+  >
+    <option value="">--</option>
+    {Array.from({ length: 31 }, (_, i) => i + 1).map((dd) => (
+      <option key={dd} value={String(dd).padStart(2, "0")}>{dd}</option>
+    ))}
+  </select>
+
+  <button
+    className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300"
+    onClick={() => { setY(""); setM(""); setD(""); }}
+  >
+    Tất cả
+  </button>
+
+  <button
+    className="px-3 py-1 rounded bg-green-200 hover:bg-green-300 text-green-800"
+    onClick={() => {
+      const now = dayjs();
+      setY(String(now.year()));
+      setM(String(now.month() + 1).padStart(2, "0"));
+      setD(String(now.date()).padStart(2, "0"));
+    }}
+  >
+    Hôm nay
+  </button>
+</div>
+
+
           </div>
 
           {/* Thống kê nhỏ */}
@@ -214,7 +291,7 @@ const LichHen = () => {
                         onClick={() => handleViewDetail(item)}
                         className="text-blue-600 hover:text-blue-800 mr-2 text-sm"
                       >
-                        Chi tiết
+                        Xác nhận
                       </button>
                       {item.trangThai !== "Đã huỷ" && (
                         <button

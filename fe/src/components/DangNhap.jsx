@@ -26,6 +26,10 @@ const DangNhap = () => {
       flag = false;
     }
 
+    if(!email || !password){
+      alert("Vui lòng nhập đầy dủ thông tin");
+      flag = false;
+    }
     if (!flag) {
       setErrors(errorsSubmit);
       return;
@@ -37,32 +41,34 @@ const DangNhap = () => {
 
         if (response.data.message === "Đăng nhập thành công") {
           const user = response.data.user;
-          alert("✅ Đăng nhập thành công!");
+          alert(" Đăng nhập thành công!");
 
-          // ✅ Xoá dữ liệu cũ, nhưng KHÔNG xoá toàn bộ localStorage
-          // (vì có thể có token hoặc dữ liệu khác)
-          localStorage.removeItem("user");
-          localStorage.removeItem("bacsi");
-          localStorage.removeItem("admin");
+          // ✅ Xóa dữ liệu cũ trong sessionStorage (chỉ phiên này)
+          sessionStorage.removeItem("user");
+          sessionStorage.removeItem("token");
 
-          // ✅ Lưu thông tin theo role để tránh ghi đè
+          // ✅ Lưu thông tin user và token vào sessionStorage
+          sessionStorage.setItem("user", JSON.stringify(user));
+          if (response.data.token) {
+            sessionStorage.setItem("token", response.data.token);
+          }
+
+          // ✅ Điều hướng theo vai trò
           if (user.role === "admin") {
-            localStorage.setItem("admin", JSON.stringify(user));
             navigate("/admin");
           } else if (user.role === "bacsi") {
-            localStorage.setItem("bacsi", JSON.stringify(user));
             navigate("/bacsi");
           } else {
-            localStorage.setItem("user", JSON.stringify(user));
-            navigate("/"); // user bình thường
+            navigate("/");
           }
+
         } else {
-          alert("❌ Đăng nhập thất bại!");
+          alert(" Đăng nhập thất bại!");
         }
       })
       .catch((error) => {
         console.error(error);
-        alert("❌ Email hoặc mật khẩu không đúng!");
+        alert(" Email hoặc mật khẩu không đúng!");
       });
   };
 

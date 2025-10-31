@@ -59,7 +59,10 @@ const QuanLyLichLamViec = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const [searchDate, setSearchDate] = useState("");
+  const [searchYear, setSearchYear] = useState("");
+  const [searchMonth, setSearchMonth] = useState("");
+  const [searchDay, setSearchDay] = useState("");
   // danh sách lịch
   const [schedules, setSchedules] = useState([]);
 
@@ -77,24 +80,34 @@ const QuanLyLichLamViec = () => {
 
   // ===== LOAD LIST =====
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await Api.get("lichlamviec"); // GET /work-schedules
-        const data = Array.isArray(res.data) ? res.data : [];
-        // Chuẩn hoá date để hiển thị & edit (input date)
-        const normalized = data.map((it) => ({
-          ...it,
-          // giữ lại giá trị gốc (ISO) nếu cần, nhưng input cần yyyy-MM-dd
-          __rawDate: it.date,
-          date: toInputDate(it.date),
-        }));
-        setSchedules(normalized);
-      } catch (e) {
-        console.error("Load schedules failed:", e);
-        setSchedules([]);
-      }
-    })();
-  }, []);
+  (async () => {
+    try {
+      const doctor = JSON.parse(sessionStorage.getItem("user") || "null");
+      const doctorId = doctor?.id;
+
+      const res = doctorId
+        ? await Api.get(`lichlamviec?doctorId=${doctorId}`)
+        : await Api.get("lichlamviec");
+
+      const data = Array.isArray(res.data) ? res.data : [];
+
+      // ✅ CHỈ LẤY LỊCH CHƯA ĐƯỢC DUYỆT
+      const filtered = data.filter((it) => it.status !== "Đã duyệt");
+
+      const normalized = filtered.map((it) => ({
+        ...it,
+        __rawDate: it.date,
+        date: toInputDate(it.date),
+      }));
+
+      setSchedules(normalized);
+    } catch (e) {
+      console.error("Load schedules failed:", e);
+      setSchedules([]);
+    }
+  })();
+}, []);
+
 
   // ===== VALIDATION =====
   const validate = ({ date, shiftKey, room }) => {
@@ -108,12 +121,36 @@ const QuanLyLichLamViec = () => {
 
   // ===== CREATE =====
 const handleCreate = async () => {
-  if (!newSchedule.date || newSchedule.shiftKeys.length === 0 || !newSchedule.room) {
+  
+  if (!newSchedule.date && newSchedule.shiftKeys.length === 0 && !newSchedule.room) {
     alert("Vui lòng chọn Ngày / Ca trực / Phòng.");
     return;
   }
 
+  // ⚡ Kiểm tra dữ liệu trống
+  if (!newSchedule.date) {
+    alert(" Vui lòng chọn ngày làm việc!");
+    return;
+  }
+
+  if (newSchedule.shiftKeys.length === 0) {
+    alert(" Vui lòng chọn ít nhất một ca trực!");
+    return;
+  }
+
+  if (!newSchedule.room) {
+    alert(" Vui lòng chọn phòng khám!");
+    return;
+  }
+const doctor = JSON.parse(sessionStorage.getItem("user") || "null"); // ✅ thêm dòng này
+  const doctorId = doctor?.id || null;
   setLoading(true);
+const today = new Date();
+const selected = new Date(newSchedule.date);
+if (selected.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0)) {
+  alert(" Không thể đăng ký ngày trong quá khứ!");
+  return;
+}
 
   try {
     // tạo nhiều payload dựa theo shiftKeys
@@ -125,9 +162,11 @@ const handleCreate = async () => {
         startTime: shift.startTime,
         endTime: shift.endTime,
         room: newSchedule.room,
-        status: newSchedule.status,
+        status: "Đang chờ xác nhận", 
+        doctorId,
       };
       const res = await Api.post("lichlamviec", payload);
+      alert("tạo lịch thành công!");
       createdSchedules.push(res.data);
     }
 
@@ -168,6 +207,12 @@ const handleCreate = async () => {
 
   const handleSaveEdit = async () => {
     if (!validate(editSchedule)) return;
+const today = new Date();
+const selected = new Date(editSchedule.date);
+if (selected.setHours(0, 0, 0, 0) < today.setHours(0, 0, 0, 0)) {
+  alert(" Không thể sửa lịch sang ngày trong quá khứ!");
+  return;
+}
 
     const shift = SHIFTS.find(s => s.key === editSchedule.shiftKey);
 const payload = {
@@ -224,6 +269,7 @@ const payload = {
 
     try {
       await Api.delete(`lichlamviec/${schedule.id}`); // DELETE
+       alert(" Xóa lịch thành công!");
     } catch (e) {
       setSchedules(snapshot);
       alert("Xóa lịch thất bại!");
@@ -248,6 +294,78 @@ const payload = {
           <h1 className="text-xl font-bold text-blue-700 flex items-center gap-2">
             <span>🗓️</span> Quản lý lịch làm việc
           </h1>
+          {/* 🔍 Tìm kiếm theo tháng/năm */}
+{/* 🔍 Bộ lọc Năm / Tháng / Ngày */}
+{/* 🔍 Bộ lọc Năm / Tháng / Ngày + Nút Tất cả / Hôm nay */}
+<div className="flex flex-wrap items-center gap-3 mb-4">
+  <label className="text-gray-700 text-sm font-medium">Năm:</label>
+  <select
+    value={searchYear}
+    onChange={(e) => setSearchYear(e.target.value)}
+    className="border border-gray-300 rounded px-2 py-1 text-sm"
+  >
+    <option value="">--</option>
+    {Array.from({ length: 6 }, (_, i) => 2025 - i).map((year) => (
+      <option key={year} value={year}>{year}</option>
+    ))}
+  </select>
+
+  <label className="text-gray-700 text-sm font-medium">Tháng:</label>
+  <select
+    value={searchMonth}
+    onChange={(e) => setSearchMonth(e.target.value)}
+    className="border border-gray-300 rounded px-2 py-1 text-sm"
+  >
+    <option value="">--</option>
+    {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+      <option key={month} value={String(month).padStart(2, "0")}>
+        {month}
+      </option>
+    ))}
+  </select>
+
+  <label className="text-gray-700 text-sm font-medium">Ngày:</label>
+  <select
+    value={searchDay}
+    onChange={(e) => setSearchDay(e.target.value)}
+    className="border border-gray-300 rounded px-2 py-1 text-sm"
+  >
+    <option value="">--</option>
+    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+      <option key={day} value={String(day).padStart(2, "0")}>
+        {day}
+      </option>
+    ))}
+  </select>
+
+  {/* Nút hiển thị tất cả */}
+  <button
+    onClick={() => {
+      setSearchYear("");
+      setSearchMonth("");
+      setSearchDay("");
+    }}
+    className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-3 py-1 rounded"
+  >
+    Tất cả
+  </button>
+
+  {/* Nút hiển thị lịch hôm nay */}
+  <button
+    onClick={() => {
+      const now = new Date();
+      setSearchYear(now.getFullYear().toString());
+      setSearchMonth(String(now.getMonth() + 1).padStart(2, "0"));
+      setSearchDay(String(now.getDate()).padStart(2, "0"));
+    }}
+    className="bg-green-200 hover:bg-green-300 text-green-800 text-sm px-3 py-1 rounded"
+  >
+    Hôm nay
+  </button>
+</div>
+
+
+
           <button
             onClick={() => setIsCreateOpen(true)}
             disabled={loading}
@@ -256,6 +374,8 @@ const payload = {
             <FaPlus /> Tạo lịch mới
           </button>
         </div>
+
+
 
         <div className="bg-white p-4 rounded-lg shadow">
           <table className="w-full border-separate border-spacing-y-2">
@@ -270,31 +390,62 @@ const payload = {
               </tr>
             </thead>
             <tbody>
-              {schedules.map((s) => (
-                <tr key={s.id} className="bg-white hover:bg-gray-50">
-                  <td className="py-3 px-4">{toVN(s.__rawDate ?? s.date)}</td>
-                  <td className="py-3 px-4">{s.startTime}</td>
-                  <td className="py-3 px-4">{s.endTime}</td>
-                  <td className="py-3 px-4">{s.room}</td>
-                  <td className="py-3 px-4">
-                    <StatusBadge value={s.status} />
-                  </td>
-                  <td className="py-3 px-4 flex gap-2">
-                    <button
-                      onClick={() => handleEdit(s)}
-                      className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 flex items-center gap-1"
-                    >
-                      <FaEdit /> Sửa
-                    </button>
-                    <button
-                      onClick={() => handleDelete(s)}
-                      className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 flex items-center gap-1"
-                    >
-                      <FaTrash /> Xóa
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {schedules
+  .filter((s) => {
+    if (!searchYear && !searchMonth && !searchDay) return true;
+    const d = new Date(s.__rawDate ?? s.date);
+    const year = d.getFullYear().toString();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    if (searchYear && year !== searchYear) return false;
+    if (searchMonth && month !== searchMonth) return false;
+    if (searchDay && day !== searchDay) return false;
+
+    return true;
+  })
+  // 🔽 SẮP XẾP THEO THỜI GIAN TĂNG DẦN (năm → tháng → ngày)
+  .sort((a, b) => {
+    const dateA = new Date(a.__rawDate ?? a.date);
+    const dateB = new Date(b.__rawDate ?? b.date);
+    return dateA - dateB; // tăng dần
+  })
+  .map((s) => (
+    <tr key={s.id} className="bg-white hover:bg-gray-50">
+      <td className="py-3 px-4">{toVN(s.__rawDate ?? s.date)}</td>
+      <td className="py-3 px-4">{s.startTime}</td>
+      <td className="py-3 px-4">{s.endTime}</td>
+      <td className="py-3 px-4">{s.room}</td>
+      <td className="py-3 px-4">
+        <StatusBadge value={s.status} />
+      </td>
+      <td className="py-3 px-4 flex gap-2">
+        {s.status === "Đang chờ xác nhận" ? (
+          <>
+            <button
+              onClick={() => handleEdit(s)}
+              className="bg-gray-500 text-white px-3 py-1 rounded text-xs hover:bg-gray-600 flex items-center gap-1"
+            >
+              <FaEdit /> Sửa
+            </button>
+            <button
+              onClick={() => handleDelete(s)}
+              className="bg-red-500 text-white px-3 py-1 rounded text-xs hover:bg-red-600 flex items-center gap-1"
+            >
+              <FaTrash /> Xóa
+            </button>
+          </>
+        ) : (
+          <span className="text-gray-400 italic text-sm">
+            {s.status === "Đã duyệt"
+              ? "Đã duyệt - không thể chỉnh"
+              : "Đã từ chối - không thể chỉnh"}
+          </span>
+        )}
+      </td>
+    </tr>
+  ))}
+
               {schedules.length === 0 && (
                 <tr>
                   <td className="py-6 text-center text-gray-500" colSpan={6}>
@@ -311,91 +462,90 @@ const payload = {
       <Dialog open={isCreateOpen} onClose={() => setIsCreateOpen(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="w-full max-w-md bg-white rounded-xl p-6 shadow-lg space-y-4">
-            <Dialog.Title className="text-lg font-bold text-blue-700 mb-2">
-              Tạo lịch làm việc mới
-            </Dialog.Title>
+          <Dialog.Panel className="w-full max-w-md bg-white rounded-xl p-6 shadow-lg">
+  <Dialog.Title className="text-lg font-bold text-blue-700 mb-4">
+    Tạo lịch làm việc mới
+  </Dialog.Title>
 
-            <label className="text-sm text-gray-600">Ngày</label>
-            <input
-              type="date"
-              className="w-full border px-3 py-2 rounded"
-              value={newSchedule.date}
-              onChange={(e) =>
-                setNewSchedule((v) => ({ ...v, date: e.target.value }))
-              }
-            />
-
-<label className="text-sm text-gray-600">Ca trực</label>
-<div className="grid grid-cols-1 gap-2">
-  {SHIFTS.map(s => (
-    <label
-      key={s.key}
-      className="flex items-center gap-2 border rounded p-2 cursor-pointer"
-    >
+  <div className="space-y-3">
+    {/* Ngày */}
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-600">Ngày</label>
       <input
-        type="checkbox"
-        name="shift"
-        value={s.key}
-        checked={newSchedule.shiftKeys.includes(s.key)}
-        onChange={(e) => {
-          const { value, checked } = e.target;
-          setNewSchedule((prev) => {
-            if (checked) {
-              return { ...prev, shiftKeys: [...prev.shiftKeys, value] };
-            } else {
-              return { ...prev, shiftKeys: prev.shiftKeys.filter((k) => k !== value) };
-            }
-          });
-        }}
+        type="date"
+        className="w-full border px-3 py-2 rounded focus:ring-2 focus:ring-blue-400 outline-none"
+        min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+          .toISOString()
+          .split("T")[0]}
+        value={newSchedule.date}
+        onChange={(e) => setNewSchedule((v) => ({ ...v, date: e.target.value }))}
       />
-      <span>{s.label}</span>
-    </label>
-  ))}
-</div>
+    </div>
 
+    {/* Ca trực */}
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-600">Ca trực</label>
+      <div className="grid grid-cols-1 gap-2">
+        {SHIFTS.map((s) => (
+          <label
+            key={s.key}
+            className="flex items-center gap-2 border rounded p-2 cursor-pointer hover:bg-gray-50"
+          >
+            <input
+              type="checkbox"
+              value={s.key}
+              checked={newSchedule.shiftKeys.includes(s.key)}
+              onChange={(e) => {
+                const { value, checked } = e.target;
+                setNewSchedule((prev) =>
+                  checked
+                    ? { ...prev, shiftKeys: [...prev.shiftKeys, value] }
+                    : { ...prev, shiftKeys: prev.shiftKeys.filter((k) => k !== value) }
+                );
+              }}
+            />
+            <span>{s.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
 
+    {/* Phòng khám */}
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-600">Phòng khám</label>
+      <select
+        className="w-full border px-3 py-2 rounded bg-white focus:ring-2 focus:ring-blue-400 outline-none"
+        value={newSchedule.room}
+        onChange={(e) => setNewSchedule((v) => ({ ...v, room: e.target.value }))}
+      >
+        <option value="">-- Chọn phòng --</option>
+        {ROOM_OPTIONS.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+    </div>
 
-            <label className="text-sm text-gray-600">Phòng khám</label>
-            <select
-              className="w-full border px-3 py-2 rounded bg-white"
-              value={newSchedule.room}
-              onChange={(e) =>
-                setNewSchedule((v) => ({ ...v, room: e.target.value }))
-              }
-            >
-              <option value="">-- Chọn phòng --</option>
-              {ROOM_OPTIONS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+    {/* Trạng thái */}
+    <div className="space-y-1">
+      <label className="text-sm font-medium text-gray-600">Trạng thái</label>
+      <div className="border px-3 py-2 rounded bg-gray-50 text-gray-600">
+        Đang chờ xác nhận (sẽ hiển thị khi admin duyệt)
+      </div>
+    </div>
+  </div>
 
-            <label className="text-sm text-gray-600">Trạng thái</label>
-            <select
-              className="w-full border px-3 py-2 rounded bg-white"
-              value={newSchedule.status}
-              onChange={(e) =>
-                setNewSchedule((v) => ({ ...v, status: e.target.value }))
-              }
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+  <div className="text-right mt-4">
+    <button
+      onClick={handleCreate}
+      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+    >
+      Tạo mới
+    </button>
+  </div>
+</Dialog.Panel>
 
-            <div className="text-right">
-              <button
-                onClick={handleCreate}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Tạo mới
-              </button>
-            </div>
-          </Dialog.Panel>
         </div>
       </Dialog>
 
@@ -412,13 +562,17 @@ const payload = {
               <>
                 <label className="text-sm text-gray-600">Ngày</label>
                 <input
-                  type="date"
-                  className="w-full border px-3 py-2 rounded"
-                  value={editSchedule.date || ""}
-                  onChange={(e) =>
-                    setEditSchedule((v) => ({ ...v, date: e.target.value }))
-                  }
-                />
+  type="date"
+  className="w-full border px-3 py-2 rounded"
+  min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .split("T")[0]}
+  value={editSchedule.date || ""}
+  onChange={(e) =>
+    setEditSchedule((v) => ({ ...v, date: e.target.value }))
+  }
+/>
+
 
                 <label className="text-sm text-gray-600">Ca trực</label>
 <div className="grid grid-cols-1 gap-2">
@@ -485,4 +639,4 @@ const payload = {
   );
 };
 
-export default QuanLyLichLamViec;
+export default QuanLyLichLamViec; 

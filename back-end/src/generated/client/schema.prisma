@@ -23,10 +23,11 @@ model User {
   phone         String? // số điện thoại
   address       String? // địa chỉ
   gioitinh      String? // giới tính
+  status        String?        @default("Không hoạt động")
   dichvu        Dichvu?        @relation(fields: [dichvuId], references: [id])
   bookings      Booking[]      @relation("DoctorBookings")
   workSchedules WorkSchedule[]
-  // 👇 thêm 2 field cho reset mật khẩu
+  //  thêm 2 field cho reset mật khẩu
   resetToken    String?
   resetExpire   DateTime?
 }

@@ -53,8 +53,29 @@ const updateBooking = async (req, res) => {
   }
 };
 
+const cancelBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = {
+      huy: true,
+      trangThai: "Đã huỷ",
+    };
+
+    const updated = await bookingModel.updateBooking(id, updateData);
+    if (!updated) {
+      return res.status(404).json({ message: "Không tìm thấy lịch hẹn để huỷ" });
+    }
+
+    return res.json({ message: "Huỷ lịch hẹn thành công", booking: updated });
+  } catch (error) {
+    console.error("Lỗi huỷ lịch:", error);
+    return res.status(500).json({ message: "Lỗi server khi huỷ lịch hẹn" });
+  }
+};
+
 module.exports = {
   createBooking,
   getAllBookings,
-  updateBooking
+  updateBooking,
+  cancelBooking
 };
